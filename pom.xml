@@ -1,0 +1,275 @@
+<?xml version="1.0" encoding="utf-8"?><!-- $Id: pom.xml 336 2011-02-26 22:20:22Z ljnelson $ -->
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>com.edugility</groupId>
+  <artifactId>edugility-throwables</artifactId>
+  <version>1.0-SNAPSHOT</version>
+
+  <parent>
+    <groupId>org.sonatype.oss</groupId>
+    <artifactId>oss-parent</artifactId>
+    <version>7</version>
+  </parent>
+
+  <name>Throwables</name>
+  <description>Throwables</description>
+  <inceptionYear>2011</inceptionYear>
+  <url>http://ljnelson.github.com/${project.artifactId}/</url>
+
+  <organization>
+    <name>Laird Nelson</name>
+    <url>http://about.me/lairdnelson</url>
+  </organization>
+  
+  <licenses>
+    <license>
+      <comments>The MIT License</comments>
+      <distribution>repo</distribution>
+      <name>MIT</name>
+      <url>http://www.opensource.org/licenses/MIT</url>
+    </license>
+  </licenses>
+  
+  <scm>
+    <connection>scm:git:git@github.com:ljnelson/${project.artifactId}.git</connection>
+    <developerConnection>scm:git:git@github.com:ljnelson/${project.artifactId}.git</developerConnection>
+    <url>https://github.com/ljnelson/${project.artifactId}/</url>
+  </scm>
+
+  <developers>
+    <developer>
+      <id>ljnelson</id>
+      <name>Laird Nelson</name>
+      <email>ljnelson@gmail.com</email>
+      <url>http://about.me/lairdnelson</url>
+      <roles>
+        <role>architect</role>
+        <role>developer</role>
+      </roles>
+      <timezone>-5</timezone>
+    </developer>
+  </developers>
+
+  <issueManagement>
+    <system>Github</system>
+    <url>https://github.com/ljnelson/${project.artifactId}/issues</url>
+  </issueManagement>
+
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>junit</groupId>
+        <artifactId>junit</artifactId>
+        <version>${junitVersion}</version>
+        <scope>test</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
+  <dependencies>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <pluginManagement>
+      <plugins>
+
+        <plugin>
+          <artifactId>maven-assembly-plugin</artifactId>
+          <version>${mavenAssemblyPluginVersion}</version>
+        </plugin>
+
+        <plugin>
+          <artifactId>maven-compiler-plugin</artifactId>
+          <version>${mavenCompilerPluginVersion}</version>
+        </plugin>
+
+        <plugin>
+          <artifactId>maven-clean-plugin</artifactId>
+          <version>${mavenCleanPluginVersion}</version>
+          <configuration>
+            <filesets>
+              <fileset>
+                <directory>${basedir}</directory>
+                <includes>
+                  <include>*~</include>
+                  <include>src/**/*~</include>
+                </includes>
+              </fileset>
+            </filesets>
+          </configuration>
+        </plugin>
+
+        <plugin>
+          <artifactId>maven-dependency-plugin</artifactId>
+          <version>${mavenDependencyPluginVersion}</version>
+        </plugin>
+
+        <plugin>
+          <artifactId>maven-enforcer-plugin</artifactId>
+          <version>${mavenEnforcerPluginVersion}</version>
+        </plugin>
+
+        <plugin>
+          <artifactId>maven-gpg-plugin</artifactId>
+          <version>${mavenGpgPluginVersion}</version>
+        </plugin>
+
+        <plugin>
+          <artifactId>maven-jar-plugin</artifactId>
+          <version>${mavenJarPluginVersion}</version>
+        </plugin>
+
+        <plugin>
+          <artifactId>maven-javadoc-plugin</artifactId>
+          <version>${mavenJavadocPluginVersion}</version>
+          <configuration>
+            <detectLinks>false</detectLinks>
+            <links>
+              <link>http://download.oracle.com/javaee/6/api/</link>
+            </links>
+            <show>private</show>
+            <sourcetab>2</sourcetab>
+            <stylesheet>maven</stylesheet>
+          </configuration>
+        </plugin>
+
+        <plugin>
+          <artifactId>maven-plugin-plugin</artifactId>
+          <version>${mavenPluginPluginVersion}</version>
+        </plugin>
+
+        <plugin>
+          <artifactId>maven-project-info-reports-plugin</artifactId>
+          <version>${mavenProjectInfoReportsPlugin}</version>
+        </plugin>
+
+        <plugin>
+          <artifactId>maven-release-plugin</artifactId>
+          <version>${mavenReleasePluginVersion}</version>
+        </plugin>
+
+        <plugin>
+          <artifactId>maven-resources-plugin</artifactId>
+          <version>${mavenResourcesPluginVersion}</version>
+          <configuration>
+            <delimiters>
+              <delimiter>${*}</delimiter>
+            </delimiters>
+            <encoding>UTF8</encoding>
+            <escapeString>\</escapeString>
+            <useDefaultDelimiters>false</useDefaultDelimiters>
+          </configuration>
+        </plugin>
+
+        <plugin>
+          <artifactId>maven-scm-plugin</artifactId>
+          <version>${mavenScmPluginVersion}</version>
+        </plugin>
+
+        <plugin>
+          <artifactId>maven-site-plugin</artifactId>
+          <version>${mavenSitePluginVersion}</version>
+        </plugin>
+
+        <plugin>
+          <artifactId>maven-source-plugin</artifactId>
+          <version>${mavenSourcePluginVersion}</version>
+        </plugin>
+
+        <plugin>
+          <artifactId>maven-surefire-plugin</artifactId>
+          <version>${mavenSurefirePluginVersion}</version>
+          <configuration>
+            <systemPropertyVariables>
+              <java.util.logging.config.file>${loggingConfigFile}</java.util.logging.config.file>
+              <maven.project.build.directory>${project.build.directory}</maven.project.build.directory>
+            </systemPropertyVariables>
+          </configuration>
+        </plugin>
+
+        <plugin>
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>versions-maven-plugin</artifactId>
+          <version>${versionsMavenPluginVersion}</version>
+        </plugin>
+
+      </plugins>
+    </pluginManagement>
+
+    <resources>
+      <resource>
+        <directory>${basedir}/src/main/resources</directory>
+        <filtering>true</filtering>
+      </resource>
+    </resources>
+
+    <testResources>
+      <testResource>
+        <directory>${basedir}/src/test/resources</directory>
+        <filtering>true</filtering>
+      </testResource>
+    </testResources>
+
+  </build>
+
+  <properties>
+
+    <!-- Versions -->
+    <junitVersion>4.10</junitVersion>
+    <mavenAssemblyPluginVersion>2.2.1</mavenAssemblyPluginVersion>
+    <mavenCleanPluginVersion>2.4.1</mavenCleanPluginVersion>
+    <mavenCompilerPluginVersion>2.3.2</mavenCompilerPluginVersion>
+    <mavenDependencyPluginVersion>2.2</mavenDependencyPluginVersion>
+    <mavenEnforcerPluginVersion>1.0.1</mavenEnforcerPluginVersion>
+    <mavenGpgPluginVersion>1.4</mavenGpgPluginVersion>
+    <mavenJarPluginVersion>2.3.1</mavenJarPluginVersion>
+    <mavenJavadocPluginVersion>2.8</mavenJavadocPluginVersion>
+    <mavenPluginPluginVersion>2.9</mavenPluginPluginVersion>
+    <mavenProjectInfoReportsPlugin>2.4</mavenProjectInfoReportsPlugin>
+    <mavenReleasePluginVersion>2.2.1</mavenReleasePluginVersion>    
+    <mavenResourcesPluginVersion>2.5</mavenResourcesPluginVersion>
+    <mavenScmManagerPlexusVersion>${mavenScmPluginVersion}</mavenScmManagerPlexusVersion>
+    <mavenScmPluginVersion>1.5</mavenScmPluginVersion>
+    <mavenScmProviderGitexeVersion>${mavenScmPluginVersion}</mavenScmProviderGitexeVersion>
+    <mavenSitePluginVersion>3.0</mavenSitePluginVersion>
+    <mavenSourcePluginVersion>2.1.2</mavenSourcePluginVersion>
+    <mavenSurefirePluginVersion>2.10</mavenSurefirePluginVersion>
+    <mavenVersion>3.0.3</mavenVersion>
+    <versionsMavenPluginVersion>1.2</versionsMavenPluginVersion>
+
+    <!-- Other -->
+    <loggingConfigFile>${basedir}/logging.properties</loggingConfigFile>
+    <maven.compiler.showWarnings>true</maven.compiler.showWarnings>
+    <maven.compiler.source>1.6</maven.compiler.source>
+    <maven.compiler.target>1.6</maven.compiler.target>
+    <maven.resources.escapeString>\</maven.resources.escapeString>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <surefire.useFile>false</surefire.useFile>
+
+  </properties>
+
+  <reporting>
+    <plugins>
+      <plugin>
+        <artifactId>maven-javadoc-plugin</artifactId>
+        <version>${mavenJavadocPluginVersion}</version>
+        <configuration>
+          <detectLinks>false</detectLinks>
+          <links>
+            <link>http://download.oracle.com/javaee/6/api/</link>
+          </links>
+          <show>private</show>
+          <sourcetab>2</sourcetab>
+          <stylesheet>maven</stylesheet>
+        </configuration>
+      </plugin>
+    </plugins>
+  </reporting>
+
+
+</project>
