@@ -27,7 +27,9 @@
  */
 package com.edugility.throwables;
 
+import java.util.Iterator;
 import java.util.List;
+import java.util.NoSuchElementException;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -79,7 +81,8 @@ public class TestCaseThrowables {
   @Test
   public void testAsList() {
     List<Throwable> list = Throwables.asList(null);
-    assertNull(list);
+    assertNotNull(list);
+    assertTrue(list.isEmpty());
     list = Throwables.asList(this.first);
     assertNotNull(list);
     assertEquals(4, list.size());
@@ -89,5 +92,19 @@ public class TestCaseThrowables {
     assertSame(this.last, list.get(3));
   }
 
+  @Test
+  public void testAsIterable() {
+    Iterable<Throwable> iterable = Throwables.asIterable(null);
+    assertNotNull(iterable);
+    final Iterator<Throwable> iterator = iterable.iterator();
+    assertNotNull(iterator);
+    assertFalse(iterator.hasNext());
+    try {
+      iterator.next();
+      fail();
+    } catch (final NoSuchElementException expected) {
+
+    }
+  }
 
 }
