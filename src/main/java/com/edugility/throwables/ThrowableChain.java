@@ -120,6 +120,20 @@ public class ThrowableChain extends Throwable implements Iterable<Throwable> {
     return this.list.iterator();
   }
 
+  /**
+   * {@inheritDoc}
+   *
+   * <p>Prints the stack trace of this {@link ThrowableChain} and then
+   * of every {@linkplain #iterator() <tt>Throwable</tt> contained by
+   * it}.  Each stack trace is preceded by the following text (quoted
+   * here; the quotation marks are not part of the text):
+   * "<tt><i>d</i>. </tt>" <i>d</i> in the preceding text fragment is
+   * substituted with the ordinal position, starting with {@code 1},
+   * of the {@link Throwable} in question.</p>
+   *
+   * @param s the {@link PrintStream} to print to; must not be {@code
+   * null}
+   */
   @Override
   public void printStackTrace(final PrintStream s) {
     if (s != null) {
@@ -138,6 +152,18 @@ public class ThrowableChain extends Throwable implements Iterable<Throwable> {
     }
   }
 
+  /**
+   * <p>Prints the stack trace of this {@link ThrowableChain} and then
+   * of every {@linkplain #iterator() <tt>Throwable</tt> contained by
+   * it}.  Each stack trace is preceded by the following text (quoted
+   * here; the quotation marks are not part of the text):
+   * "<tt><i>d</i>. </tt>" <i>d</i> in the preceding text fragment is
+   * substituted with the ordinal position, starting with {@code 1},
+   * of the {@link Throwable} in question.</p>
+   *
+   * @param w the {@link PrintWriter} to print to; must not be {@code
+   * null}
+   */
   @Override
   public void printStackTrace(final PrintWriter w) {
     if (w != null) {
