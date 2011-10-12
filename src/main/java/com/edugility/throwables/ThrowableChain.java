@@ -27,6 +27,9 @@
  */
 package com.edugility.throwables;
 
+import java.io.PrintStream;
+import java.io.PrintWriter;
+
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -117,5 +120,40 @@ public class ThrowableChain extends Throwable implements Iterable<Throwable> {
     return this.list.iterator();
   }
 
+  @Override
+  public void printStackTrace(final PrintStream s) {
+    if (s != null) {
+      synchronized (s) {
+        int i = 1;
+        for (final Throwable t : this) {
+          if (t == this) {
+            s.print(i++ + ". ");
+            super.printStackTrace(s);
+          } else if (t != null) {
+            s.print(i++ + ". ");
+            t.printStackTrace(s);
+          }
+        }
+      }
+    }
+  }
+
+  @Override
+  public void printStackTrace(final PrintWriter w) {
+    if (w != null) {
+      synchronized (w) {
+        int i = 1;
+        for (final Throwable t : this) {          
+          if (t == this) {
+            w.print(i++ + ". ");
+            super.printStackTrace(w);
+          } else if (t != null) {
+            w.print(i++ + ". ");
+            t.printStackTrace(w);
+          }
+        }
+      }
+    }
+  }
 
 }
