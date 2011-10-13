@@ -36,8 +36,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * A {@link Throwable} that is also holds a modifiable list of other
@@ -57,18 +56,11 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 public class ThrowableChain extends Throwable implements Iterable<Throwable> {
 
   /**
-   * A {@link ReadWriteLock} for making this {@link ThrowableChain}'s
-   * associated {@link List} of affiliate {@link Throwable}s
-   * threadsafe.  This field is never {@code null}.
-   */
-  private final ReadWriteLock listLock;
-
-  /**
    * The {@link List} containing additional {@link Throwable}s.  This
    * field is never {@code null} and never {@linkplain List#isEmpty()
    * empty}.
    */
-  private final List<Throwable> list;
+  private final CopyOnWriteArrayList<Throwable> list;
 
   /**
    * Creates a new {@link ThrowableChain}.
@@ -87,8 +79,7 @@ public class ThrowableChain extends Throwable implements Iterable<Throwable> {
    */
   public ThrowableChain(final String message, final Throwable cause) {
     super(message);
-    this.listLock = new ReentrantReadWriteLock();
-    this.list = new ArrayList<Throwable>(11);
+    this.list = new CopyOnWriteArrayList<Throwable>();
     this.list.add(this);
     if (cause != null) {
       this.initCause(cause);
@@ -128,12 +119,10 @@ public class ThrowableChain extends Throwable implements Iterable<Throwable> {
   public ThrowableChain initCause(final Throwable throwable) {
     super.initCause(throwable);
     if (throwable != null) {
-      this.listLock.writeLock().lock();
-      try {
-        this.list.add(1, throwable);
-      } finally {
-        this.listLock.writeLock().unlock();
-      }
+      assert this.list.size() >= 1;
+      assert this.list.get(0) == this;
+      assert !this.list.contains(throwable);
+      this.list.add(1, throwable);
     }
     return this;
   }
@@ -166,12 +155,7 @@ public class ThrowableChain extends Throwable implements Iterable<Throwable> {
         this.initCause(throwable);
         returnValue = true;
       } else {
-        this.listLock.writeLock().lock();
-        try {
-          returnValue = this.list.add(throwable);
-        } finally {
-          this.listLock.writeLock().unlock();
-        }
+        returnValue = this.list.addIfAbsent(throwable);
       }
     }
     return returnValue;
@@ -195,23 +179,29 @@ public class ThrowableChain extends Throwable implements Iterable<Throwable> {
    * @return a new {@link List}; never {@code null}
    *
    * @see #iterator()
+   *
+   * @see #asList()
    */
   public List<Throwable> toList() {
-    this.listLock.readLock().lock();
-    try {
-      return new ArrayList<Throwable>(this.list);
-    } finally {
-      this.listLock.readLock().unlock();
-    }
+    return new ArrayList<Throwable>(this.asList());
   }
 
+  /**
+   * Returns a new {@linkplain Collections#unmodifiableList(List)
+   * unmodifiable view} of this {@link ThrowableChain}'s list of
+   * affiliated {@link Throwable}s.  No copying occurs during this
+   * operation.
+   *
+   * <p>The returned {@link List} is never {@code null}, never
+   * {@linkplain Collection#isEmpty() empty},
+   * <strong>immutable</strong> and safe for iteration by multiple
+   * threads without synchronization or locking.</p>
+   *
+   * @return a read-only view of the underlying list of affiliated
+   * {@link Throwable}s; never {@code null}
+   */
   public List<Throwable> asList() {
-    this.listLock.readLock().lock();
-    try {
-      return Collections.unmodifiableList(this.list);
-    } finally {
-      this.listLock.readLock().unlock();
-    }
+    return Collections.unmodifiableList(this.list);
   }
 
   /**
@@ -221,13 +211,8 @@ public class ThrowableChain extends Throwable implements Iterable<Throwable> {
    * @return the size of this {@link ThrowableChain}&mdash;a positive
    * integer greater than or equal to {@code 1}
    */
-  public final int size() {
-    this.listLock.readLock().lock();
-    try {
-      return this.list.size();
-    } finally {
-      this.listLock.readLock().unlock();
-    }
+  public int size() {
+    return this.list.size();
   }
 
   /**
@@ -244,12 +229,7 @@ public class ThrowableChain extends Throwable implements Iterable<Throwable> {
    */
   @Override
   public final Iterator<Throwable> iterator() {
-    this.listLock.readLock().lock();
-    try {
-      return this.asList().iterator();
-    } finally {
-      this.listLock.readLock().unlock();
-    }
+    return this.asList().iterator();
   }
 
   /**
@@ -270,14 +250,19 @@ public class ThrowableChain extends Throwable implements Iterable<Throwable> {
   public void printStackTrace(final PrintStream s) {
     if (s != null) {
       synchronized (s) {
-        int i = 1;
-        for (final Throwable t : this) {
-          if (t == this) {
-            s.print(i++ + ". ");
-            super.printStackTrace(s);
-          } else if (t != null) {
-            s.print(i++ + ". ");
-            t.printStackTrace(s);
+        if (this.size() == 2) {
+          // Us and a cause
+          super.printStackTrace(s);
+        } else {
+          int i = 1;
+          for (final Throwable t : this) {
+            if (t == this) {
+              s.print(i++ + ". ");
+              super.printStackTrace(s);
+            } else if (t != null) {
+              s.print(i++ + ". ");
+              t.printStackTrace(s);
+            }
           }
         }
       }
@@ -300,14 +285,20 @@ public class ThrowableChain extends Throwable implements Iterable<Throwable> {
   public void printStackTrace(final PrintWriter w) {
     if (w != null) {
       synchronized (w) {
-        int i = 1;
-        for (final Throwable t : this) {          
-          if (t == this) {
-            w.print(i++ + ". ");
-            super.printStackTrace(w);
-          } else if (t != null) {
-            w.print(i++ + ". ");
-            t.printStackTrace(w);
+        if (this.size() == 2) {
+          // Us and a cause, nothing else, so regular stack trace
+          // printing is fine.
+          super.printStackTrace(w);
+        } else {
+          int i = 1;
+          for (final Throwable t : this) {          
+            if (t == this) {
+              w.print(i++ + ". ");
+              super.printStackTrace(w);
+            } else if (t != null) {
+              w.print(i++ + ". ");
+              t.printStackTrace(w);
+            }
           }
         }
       }
