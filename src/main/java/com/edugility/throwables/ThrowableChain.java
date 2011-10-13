@@ -34,7 +34,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
-import java.util.NoSuchElementException;
 
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -162,6 +161,30 @@ public class ThrowableChain extends Throwable implements Iterable<Throwable> {
   }
 
   /**
+   * Removes the first instance of the supplied {@link Throwable} from
+   * this {@link ThrowableChain}'s list of affiliated {@link
+   * Throwable}s, provided that it is not (a) this {@link
+   * ThrowableChain}, (b) {@code null}, or (c) this {@link
+   * ThrowableChain}'s {@linkplain #getCause() cause}.
+   *
+   * @param throwable the affiliated {@link Throwable} to remove
+   * provided it meets the conditions described; may be {@code null}
+   * in which case no action will be taken
+   *
+   * @return {@code true} if this {@link ThrowableChain} actually
+   * removed the supplied {@link Throwable}; {@code false} otherwise
+   */
+  public final boolean remove(final Throwable throwable) {
+    boolean returnValue = false;
+    if (throwable != null && throwable != this) {
+      if (throwable != this.getCause()) {
+        returnValue = this.list.remove(throwable);
+      }
+    }
+    return returnValue;
+  }
+
+  /**
    * Returns a new {@link List} instance that contains this {@link
    * ThrowableChain} as its first element, this {@link
    * ThrowableChain}'s {@linkplain #getCause() cause}, if any, as its
@@ -249,11 +272,11 @@ public class ThrowableChain extends Throwable implements Iterable<Throwable> {
   @Override
   public void printStackTrace(final PrintStream s) {
     if (s != null) {
-      synchronized (s) {
-        if (this.size() == 2) {
-          // Us and a cause
-          super.printStackTrace(s);
-        } else {
+      if (this.size() == 2) {
+        // Us and a cause
+        super.printStackTrace(s);
+      } else {
+        synchronized (s) {
           int i = 1;
           for (final Throwable t : this) {
             if (t == this) {
@@ -284,12 +307,12 @@ public class ThrowableChain extends Throwable implements Iterable<Throwable> {
   @Override
   public void printStackTrace(final PrintWriter w) {
     if (w != null) {
-      synchronized (w) {
-        if (this.size() == 2) {
-          // Us and a cause, nothing else, so regular stack trace
-          // printing is fine.
-          super.printStackTrace(w);
-        } else {
+      if (this.size() == 2) {
+        // Us and a cause, nothing else, so regular stack trace
+        // printing is fine.
+        super.printStackTrace(w);
+      } else {
+        synchronized (w) {
           int i = 1;
           for (final Throwable t : this) {          
             if (t == this) {
