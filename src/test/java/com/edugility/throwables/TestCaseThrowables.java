@@ -93,6 +93,25 @@ public class TestCaseThrowables {
   }
 
   @Test
+  public void testToListWithThrowableChain() {
+    final ThrowableChain chain = new ThrowableChain();
+    assertEquals(1, chain.size());
+    final Exception cause = new Exception("cause");
+    final Exception firstAffiliate = new Exception("firstAffiliate");
+    chain.add(cause); // actually initializes cause, does not add to list
+    assertEquals(1, chain.size());
+    assertSame(cause, chain.getCause());
+    chain.add(firstAffiliate);
+    assertEquals(2, chain.size());
+    final List<Throwable> list = Throwables.toList(chain);
+    assertNotNull(list);
+    assertEquals(3, list.size());
+    assertSame(chain, list.get(0));
+    assertSame(cause, list.get(1));
+    assertSame(firstAffiliate, list.get(2));
+  }
+
+  @Test
   public void testAsIterable() {
     Iterable<Throwable> iterable = Throwables.asIterable(null);
     assertNotNull(iterable);

@@ -111,23 +111,31 @@ public final class Throwables {
    * {@link #asIterable(Throwable)} or {@link #asIterator(Throwable)}
    * methods; neither of those methods creates a list.</p>
    *
-   * @param t the {@link Throwable} in question; may be {@code null}
+   * @param throwable the {@link Throwable} in question; may be {@code null}
    *
    * @return a {@link List} of {@link Throwable}s; never {@code null};
    * the return value will always contain the supplied {@link
    * Throwable} as its first element unless the supplied {@link
    * Throwable} is {@code null}
    */
-  public static final List<Throwable> toList(final Throwable t) {
+  public static final List<Throwable> toList(final Throwable throwable) {
     final List<Throwable> returnValue;
-    if (t == null) {
+    if (throwable == null) {
       returnValue = Collections.emptyList();
     } else {
+      final Iterable<Throwable> throwables;
+      if (throwable instanceof Iterable) {
+        throwables = (Iterable<Throwable>)throwable;
+      } else {
+        throwables = Collections.singleton(throwable);
+      }
       final List<Throwable> l = new ArrayList<Throwable>();
-      l.add(t);
-      Throwable cause = t;
-      while ((cause = cause.getCause()) != null && cause != t) {
-        l.add(cause);
+      for (final Throwable t : throwables) {
+        l.add(t);
+        Throwable cause = t;
+        while ((cause = cause.getCause()) != null && cause != t) {
+          l.add(cause);
+        }
       }
       returnValue = Collections.unmodifiableList(l);
     }
