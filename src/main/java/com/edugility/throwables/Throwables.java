@@ -123,18 +123,26 @@ public final class Throwables {
     if (throwable == null) {
       returnValue = Collections.emptyList();
     } else {
-      final Iterable<Throwable> throwables;
+      final Iterable<?> throwables;
       if (throwable instanceof Iterable) {
-        throwables = (Iterable<Throwable>)throwable;
+        throwables = (Iterable<?>)throwable;
       } else {
         throwables = Collections.singleton(throwable);
       }
       final List<Throwable> l = new ArrayList<Throwable>();
-      for (final Throwable t : throwables) {
-        l.add(t);
-        Throwable cause = t;
-        while ((cause = cause.getCause()) != null && cause != t) {
-          l.add(cause);
+      final Iterator<?> iterator = throwables.iterator();
+      boolean found = false;
+      if (iterator != null) {
+        while (iterator.hasNext()) {
+          final Object o = iterator.next();
+          if (o instanceof Throwable) {
+            final Throwable t = (Throwable)o;
+            l.add(t);
+            Throwable cause = t;
+            while ((cause = cause.getCause()) != null && cause != t) {
+              l.add(cause);
+            }
+          }
         }
       }
       returnValue = Collections.unmodifiableList(l);
@@ -173,9 +181,9 @@ public final class Throwables {
    *
    * <p>This method may return {@code null}.</p>
    *
-   * @param t the {@link Throwable} whose causal chain should be
-   * investigated; may be {@code null} in which case {@code null} will
-   * be returned
+   * @param throwable the {@link Throwable} whose causal chain should
+   * be investigated; may be {@code null} in which case {@code null}
+   * will be returned
    *
    * @param throwableClass the {@link Class} whose {@link
    * Class#isInstance(Object)} method will be called; if {@code null}
@@ -190,19 +198,34 @@ public final class Throwables {
    * causal chain that is an instance of the supplied {@link Class},
    * or {@code null}
    */
-  public static final <T extends Throwable> T nthInstance(Throwable t, final Class<T> throwableClass, int zeroBasedOccurrence) {
+  public static final <T extends Throwable> T nthInstance(Throwable throwable, final Class<T> throwableClass, int zeroBasedOccurrence) {
     zeroBasedOccurrence = Math.max(0, zeroBasedOccurrence);
     T returnValue = null;
     if (throwableClass != null) {
-      int index = 0;
-      while (t != null) {
-        if (throwableClass.isInstance(t)) {
-          if (zeroBasedOccurrence == index++) {
-            returnValue = throwableClass.cast(t);
-            break;
+      final Iterable<?> throwables;
+      if (throwable instanceof Iterable) {
+        throwables = (Iterable<?>)throwable;
+      } else {
+        throwables = Collections.singleton(throwable);
+      }
+      final Iterator<?> iterator = throwables.iterator();
+      if (iterator != null) {
+        while (iterator.hasNext()) {
+          final Object o = iterator.next();
+          if (o instanceof Throwable) {
+            Throwable t = (Throwable)o;
+            int index = 0;
+            while (t != null) {
+              if (throwableClass.isInstance(t)) {
+                if (zeroBasedOccurrence == index++) {
+                  returnValue = throwableClass.cast(t);
+                  break;
+                }
+              }
+              t = t.getCause();
+            }
           }
         }
-        t = t.getCause();
       }
     }
     return returnValue;
