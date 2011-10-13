@@ -33,6 +33,7 @@ import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.NoSuchElementException;
 
 /**
  * A {@link Throwable} that is also holds a modifiable list of other
@@ -53,7 +54,8 @@ public class ThrowableChain extends Throwable implements Iterable<Throwable> {
 
   /**
    * The {@link List} containing additional {@link Throwable}s.  This
-   * field is never {@code null}.
+   * field is never {@code null} and never {@linkplain List#isEmpty()
+   * empty}.
    */
   private final List<Throwable> list;
 
@@ -61,7 +63,24 @@ public class ThrowableChain extends Throwable implements Iterable<Throwable> {
    * Creates a new {@link ThrowableChain}.
    */
   public ThrowableChain() {
-    this(null);
+    this(null, null);
+  }
+
+  /**
+   * Creates a new {@link ThrowableChain} with the supplied {@code
+   * message} and cause.
+   *
+   * @param message the message; may be {@code null}
+   *
+   * @param cause the cause; may be {@code null}
+   */
+  public ThrowableChain(final String message, final Throwable cause) {
+    super(message);
+    this.list = new ArrayList<Throwable>(11);
+    this.list.add(this);
+    if (cause != null) {
+      this.initCause(cause);
+    }
   }
 
   /**
@@ -71,9 +90,35 @@ public class ThrowableChain extends Throwable implements Iterable<Throwable> {
    * @param message the message; may be {@code null}
    */
   public ThrowableChain(final String message) {
-    super(message);
-    this.list = new ArrayList<Throwable>(11);
-    this.add(this);
+    this(message, null);
+  }
+
+  /**
+   * Creates a new {@link ThrowableChain} with the supplied {@code
+   * cause} and cause.
+   *
+   * @param cause the cause; may be {@code null}
+   */
+  public ThrowableChain(final Throwable cause) {
+    this(null, cause);
+  }
+
+  /**
+   * Overrides the {@link Throwable#initCause(Throwable)} method so
+   * that the cause is added to this {@link ThrowableChain}'s list of
+   * iterable {@link Throwable}s.
+   *
+   * @param throwable the cause; may be {@code null}
+   *
+   * @return this {@link ThrowableChain}
+   */
+  @Override
+  public ThrowableChain initCause(final Throwable throwable) {
+    super.initCause(throwable);
+    if (throwable != null) {
+      this.list.add(1, throwable);
+    }
+    return this;
   }
 
   /**
@@ -88,8 +133,13 @@ public class ThrowableChain extends Throwable implements Iterable<Throwable> {
   public final boolean add(final Throwable throwable) {
     boolean returnValue = false;
     if (throwable != null) {
-      returnValue = this.list.add(throwable);
-      // We deliberately do not add his cause
+      if (throwable != this) {
+        if (this.getCause() == null) {
+          this.initCause(throwable);
+        } else {
+          this.list.add(throwable);
+        }
+      }
     }
     return returnValue;
   }
