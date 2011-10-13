@@ -31,9 +31,13 @@ import java.io.PrintStream;
 import java.io.PrintWriter;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
+
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
  * A {@link Throwable} that is also holds a modifiable list of other
@@ -51,6 +55,13 @@ import java.util.NoSuchElementException;
  * @since 1.0
  */
 public class ThrowableChain extends Throwable implements Iterable<Throwable> {
+
+  /**
+   * A {@link ReadWriteLock} for making this {@link ThrowableChain}'s
+   * associated {@link List} of affiliate {@link Throwable}s
+   * threadsafe.  This field is never {@code null}.
+   */
+  private final ReadWriteLock listLock;
 
   /**
    * The {@link List} containing additional {@link Throwable}s.  This
@@ -76,6 +87,7 @@ public class ThrowableChain extends Throwable implements Iterable<Throwable> {
    */
   public ThrowableChain(final String message, final Throwable cause) {
     super(message);
+    this.listLock = new ReentrantReadWriteLock();
     this.list = new ArrayList<Throwable>(11);
     this.list.add(this);
     if (cause != null) {
@@ -116,32 +128,90 @@ public class ThrowableChain extends Throwable implements Iterable<Throwable> {
   public ThrowableChain initCause(final Throwable throwable) {
     super.initCause(throwable);
     if (throwable != null) {
-      this.list.add(1, throwable);
+      this.listLock.writeLock().lock();
+      try {
+        this.list.add(1, throwable);
+      } finally {
+        this.listLock.writeLock().unlock();
+      }
     }
     return this;
   }
 
   /**
    * Adds the supplied {@link Throwable} to this {@link
-   * ThrowableChain} if it is non-{@code null}.  The supplied {@link
-   * Throwable}'s {@linkplain Throwable#getCause() cause} is not
-   * added.
+   * ThrowableChain} if it is non-{@code null} and not this {@link
+   * ThrowableChain} (a {@link ThrowableChain} cannot add itself to
+   * itself).
+   *
+   * <p>If this {@link ThrowableChain}'s {@linkplain #getCause()
+   * cause} is {@code null}, then this {@link ThrowableChain}'s
+   * {@linkplain #initCause(Throwable) cause is initialized} to the
+   * supplied {@link Throwable} as well.</p>
+   *
+   * <p>Neither he supplied {@link Throwable}'s {@linkplain
+   * Throwable#getCause() cause} nor any transitive causes are
+   * added.</p>
    *
    * @param throwable the {@link Throwable} to add; may be {@code
    * null} in which case no action will be taken
+   *
+   * @return {@code true} if the supplied {@link Throwable} was
+   * actually added; {@code false} in all other cases
    */
   public final boolean add(final Throwable throwable) {
     boolean returnValue = false;
-    if (throwable != null) {
-      if (throwable != this) {
-        if (this.getCause() == null) {
-          this.initCause(throwable);
-        } else {
-          this.list.add(throwable);
+    if (throwable != null && throwable != this) {
+      if (this.getCause() == null) {
+        this.initCause(throwable);
+        returnValue = true;
+      } else {
+        this.listLock.writeLock().lock();
+        try {
+          returnValue = this.list.add(throwable);
+        } finally {
+          this.listLock.writeLock().unlock();
         }
       }
     }
     return returnValue;
+  }
+
+  /**
+   * Returns a new {@link List} instance that contains this {@link
+   * ThrowableChain} as its first element, this {@link
+   * ThrowableChain}'s {@linkplain #getCause() cause}, if any, as its
+   * next element, followed by all other {@link Throwable}s that were
+   * {@linkplain #add(Throwable) added to} this {@link
+   * ThrowableChain}.
+   *
+   * <p>This method never returns {@code null}.</p>
+   *
+   * <p>The {@link List} returned by this method is never {@linkplain
+   * Collection#isEmpty() empty}.</p>
+   *
+   * <p>The {@link List} returned by this method is mutable.</p>
+   *
+   * @return a new {@link List}; never {@code null}
+   *
+   * @see #iterator()
+   */
+  public List<Throwable> toList() {
+    this.listLock.readLock().lock();
+    try {
+      return new ArrayList<Throwable>(this.list);
+    } finally {
+      this.listLock.readLock().unlock();
+    }
+  }
+
+  public List<Throwable> asList() {
+    this.listLock.readLock().lock();
+    try {
+      return Collections.unmodifiableList(this.list);
+    } finally {
+      this.listLock.readLock().unlock();
+    }
   }
 
   /**
@@ -152,7 +222,12 @@ public class ThrowableChain extends Throwable implements Iterable<Throwable> {
    * integer greater than or equal to {@code 1}
    */
   public final int size() {
-    return this.list.size();
+    this.listLock.readLock().lock();
+    try {
+      return this.list.size();
+    } finally {
+      this.listLock.readLock().unlock();
+    }
   }
 
   /**
@@ -164,10 +239,17 @@ public class ThrowableChain extends Throwable implements Iterable<Throwable> {
    * @return an {@link Iterator}; never {@code null}; the first
    * element of the {@link Iterator} will always be this {@link
    * ThrowableChain}
+   *
+   * @see #asList()
    */
   @Override
   public final Iterator<Throwable> iterator() {
-    return this.list.iterator();
+    this.listLock.readLock().lock();
+    try {
+      return this.asList().iterator();
+    } finally {
+      this.listLock.readLock().unlock();
+    }
   }
 
   /**
