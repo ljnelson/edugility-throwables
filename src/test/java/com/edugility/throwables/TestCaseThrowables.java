@@ -79,11 +79,11 @@ public class TestCaseThrowables {
   }
 
   @Test
-  public void testAsList() {
-    List<Throwable> list = Throwables.asList(null);
+  public void testToList() {
+    List<Throwable> list = Throwables.toList(null);
     assertNotNull(list);
     assertTrue(list.isEmpty());
-    list = Throwables.asList(this.first);
+    list = Throwables.toList(this.first);
     assertNotNull(list);
     assertEquals(4, list.size());
     assertSame(this.first, list.get(0));

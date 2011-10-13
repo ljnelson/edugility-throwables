@@ -100,8 +100,9 @@ public final class Throwables {
   }
 
   /**
-   * Returns a view of the supplied {@link Throwable} and its
-   * {@linkplain Throwable#getCause() causal chain} as a {@link List}.
+   * Creates and returns a view of the supplied {@link Throwable} and
+   * its {@linkplain Throwable#getCause() causal chain} as a {@link
+   * List}.
    *
    * <p>This method never returns {@code null}.</p>
    *
@@ -117,7 +118,7 @@ public final class Throwables {
    * Throwable} as its first element unless the supplied {@link
    * Throwable} is {@code null}
    */
-  public static final List<Throwable> asList(final Throwable t) {
+  public static final List<Throwable> toList(final Throwable t) {
     final List<Throwable> returnValue;
     if (t == null) {
       returnValue = Collections.emptyList();

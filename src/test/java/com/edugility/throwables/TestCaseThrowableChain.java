@@ -37,17 +37,29 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertFalse;
 
 public class TestCaseThrowableChain {
 
   private ThrowableChain chain;
+
+  private Exception expectedCause;
   
   @Before
   public void setUp() throws Exception {
     this.chain = new ThrowableChain();
-    this.chain.add(new Exception("1"));
+    this.expectedCause = new Exception("1");
+    this.chain.add(this.expectedCause);
+    assertSame(this.expectedCause, this.chain.getCause());
     this.chain.add(new Exception("2"));
     this.chain.add(new Exception("3"));
+  }
+
+  @Test
+  public void testCause() {
+    assertNotNull(this.chain.getCause());
+    assertEquals("1", this.chain.getCause().getMessage());
+    assertEquals(3, this.chain.size());
   }
 
   @Test
@@ -56,15 +68,61 @@ public class TestCaseThrowableChain {
     assertNotNull(i);
     assertTrue(i.hasNext());
     Throwable t = i.next();
+
+    // The first item in the iteration is the ThrowableChain itself.
     assertSame(this.chain, t);
+
     assertTrue(i.hasNext());
     t = i.next();
     assertNotNull(t);
-    assertEquals("1", t.getMessage());
-    assertSame(t, this.chain.getCause());
+
+    // The next item is NOT the first exception added (that becomes
+    // the ThrowableChain's cause).  It is instead the SECOND
+    // exception added.
+    assertEquals("2", t.getMessage());
+
     t = i.next();
     assertNotNull(t);
-    assertEquals("2", t.getMessage());
+
+    // From that point forward the iteration proceeds normally.
+    assertEquals("3", t.getMessage());
+  }
+
+  @Test
+  public void testOddCauseAndAddSituations() throws Exception {
+    ThrowableChain chain = new ThrowableChain();
+    assertEquals(1, chain.size());
+    assertTrue(chain.getCause() == null);
+
+    // Initializing a chain's cause does not actually add that cause
+    // to the list or alter the chain's size.
+    final Exception cause = new Exception("cause");
+    chain.initCause(cause);
+    assertSame(cause, chain.getCause());
+    assertEquals(1, chain.size());
+    assertFalse(chain.asList().contains(cause));
+    
+    // Removal has no effect on the cause.
+    assertFalse(chain.remove(cause));
+    assertEquals(1, chain.size());
+    assertSame(cause, chain.getCause());
+
+    chain = new ThrowableChain();
+    
+    // Adding the first item initializes the cause but does not affect
+    // the size/contents of the chain's affiliates.
+    assertFalse(chain.add(cause));
+    assertEquals(1, chain.size());
+    assertFalse(chain.asList().contains(cause));
+
+    // Adding subsequent items affects the list but does not affect
+    // the cause.
+    final Exception affiliate = new Exception("affiliate");
+    chain.add(affiliate);
+    assertSame(cause, chain.getCause());
+    assertEquals(2, chain.size());
+    assertFalse(chain.asList().contains(cause));
+
   }
   
 

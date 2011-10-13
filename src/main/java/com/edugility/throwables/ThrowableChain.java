@@ -106,27 +106,6 @@ public class ThrowableChain extends Throwable implements Iterable<Throwable> {
   }
 
   /**
-   * Overrides the {@link Throwable#initCause(Throwable)} method so
-   * that the cause is added to this {@link ThrowableChain}'s list of
-   * iterable {@link Throwable}s.
-   *
-   * @param throwable the cause; may be {@code null}
-   *
-   * @return this {@link ThrowableChain}
-   */
-  @Override
-  public ThrowableChain initCause(final Throwable throwable) {
-    super.initCause(throwable);
-    if (throwable != null) {
-      assert this.list.size() >= 1;
-      assert this.list.get(0) == this;
-      assert !this.list.contains(throwable);
-      this.list.add(1, throwable);
-    }
-    return this;
-  }
-
-  /**
    * Adds the supplied {@link Throwable} to this {@link
    * ThrowableChain} if it is non-{@code null} and not this {@link
    * ThrowableChain} (a {@link ThrowableChain} cannot add itself to
@@ -149,12 +128,16 @@ public class ThrowableChain extends Throwable implements Iterable<Throwable> {
    */
   public final boolean add(final Throwable throwable) {
     boolean returnValue = false;
+    assert this.list != null;
+    assert this.list.contains(this);
     if (throwable != null && throwable != this) {
-      if (this.getCause() == null) {
-        this.initCause(throwable);
-        returnValue = true;
-      } else {
-        returnValue = this.list.addIfAbsent(throwable);
+      final Throwable cause = this.getCause();
+      if (throwable != cause) {
+        if (cause == null) {
+          this.initCause(throwable);
+        } else {
+          returnValue = this.list.addIfAbsent(throwable);
+        }
       }
     }
     return returnValue;
@@ -176,10 +159,8 @@ public class ThrowableChain extends Throwable implements Iterable<Throwable> {
    */
   public final boolean remove(final Throwable throwable) {
     boolean returnValue = false;
-    if (throwable != null && throwable != this) {
-      if (throwable != this.getCause()) {
-        returnValue = this.list.remove(throwable);
-      }
+    if (throwable != null && throwable != this && throwable != this.getCause()) {
+      returnValue = this.list.remove(throwable);
     }
     return returnValue;
   }
@@ -223,7 +204,7 @@ public class ThrowableChain extends Throwable implements Iterable<Throwable> {
    * @return a read-only view of the underlying list of affiliated
    * {@link Throwable}s; never {@code null}
    */
-  public List<Throwable> asList() {
+  public final List<Throwable> asList() {
     return Collections.unmodifiableList(this.list);
   }
 
@@ -272,8 +253,8 @@ public class ThrowableChain extends Throwable implements Iterable<Throwable> {
   @Override
   public void printStackTrace(final PrintStream s) {
     if (s != null) {
-      if (this.size() == 2) {
-        // Us and a cause
+      if (this.size() == 1) {
+        // Just us
         super.printStackTrace(s);
       } else {
         synchronized (s) {
@@ -307,9 +288,8 @@ public class ThrowableChain extends Throwable implements Iterable<Throwable> {
   @Override
   public void printStackTrace(final PrintWriter w) {
     if (w != null) {
-      if (this.size() == 2) {
-        // Us and a cause, nothing else, so regular stack trace
-        // printing is fine.
+      if (this.size() == 1) {
+        // Just us
         super.printStackTrace(w);
       } else {
         synchronized (w) {
