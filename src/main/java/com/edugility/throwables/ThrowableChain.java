@@ -38,7 +38,7 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
- * A {@link Throwable} that is also holds a modifiable list of other
+ * An {@link Exception} that is also holds a modifiable list of other
  * {@link Throwable}s that are not connected to the direct {@linkplain
  * Throwable#getCause() causation chain}, but are affiliated
  * nonetheless.  Instances of this class are particularly useful when
@@ -52,7 +52,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
  *
  * @since 1.0
  */
-public class ThrowableChain extends Throwable implements Iterable<Throwable> {
+public class ThrowableChain extends Exception implements Iterable<Throwable> {
 
   /**
    * The {@link List} containing additional {@link Throwable}s.  This
