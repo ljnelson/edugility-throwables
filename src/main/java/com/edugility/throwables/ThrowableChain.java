@@ -109,16 +109,25 @@ public class ThrowableChain extends Throwable implements Iterable<Throwable> {
    * Adds the supplied {@link Throwable} to this {@link
    * ThrowableChain} if it is non-{@code null} and not this {@link
    * ThrowableChain} (a {@link ThrowableChain} cannot add itself to
-   * itself).
+   * itself), or initializes this {@link ThrowableChain}'s {@linkplain
+   * #getCause() cause} with the supplied {@link Throwable} if the
+   * cause has not yet been {@linkplain Throwable#initCause(Throwable)
+   * initialized}.
    *
    * <p>If this {@link ThrowableChain}'s {@linkplain #getCause()
    * cause} is {@code null}, then this {@link ThrowableChain}'s
    * {@linkplain #initCause(Throwable) cause is initialized} to the
-   * supplied {@link Throwable} as well.</p>
+   * supplied {@link Throwable}.  Otherwise, the supplied {@link
+   * Throwable} is added to this {@link ThrowableChain}'s {@linkplain
+   * #asList() list of affiliated <tt>Throwable</tt>s}.</p>
    *
-   * <p>Neither he supplied {@link Throwable}'s {@linkplain
-   * Throwable#getCause() cause} nor any transitive causes are
+   * <p>Under no circumstances are the supplied {@link Throwable}'s
+   * {@linkplain Throwable#getCause() cause} or any transitive causes
    * added.</p>
+   *
+   * <p>If the supplied {@link Throwable} is already contained in this
+   * {@link ThrowableChain}'s {@linkplain #asList() list of affiliated
+   * <tt>Throwable</tt>s}, then no action is taken.</p>
    *
    * @param throwable the {@link Throwable} to add; may be {@code
    * null} in which case no action will be taken
@@ -129,7 +138,6 @@ public class ThrowableChain extends Throwable implements Iterable<Throwable> {
   public final boolean add(final Throwable throwable) {
     boolean returnValue = false;
     assert this.list != null;
-    assert this.list.contains(this);
     if (throwable != null && throwable != this) {
       final Throwable cause = this.getCause();
       if (throwable != cause) {
@@ -163,31 +171,6 @@ public class ThrowableChain extends Throwable implements Iterable<Throwable> {
       returnValue = this.list.remove(throwable);
     }
     return returnValue;
-  }
-
-  /**
-   * Returns a new {@link List} instance that contains this {@link
-   * ThrowableChain} as its first element, this {@link
-   * ThrowableChain}'s {@linkplain #getCause() cause}, if any, as its
-   * next element, followed by all other {@link Throwable}s that were
-   * {@linkplain #add(Throwable) added to} this {@link
-   * ThrowableChain}.
-   *
-   * <p>This method never returns {@code null}.</p>
-   *
-   * <p>The {@link List} returned by this method is never {@linkplain
-   * Collection#isEmpty() empty}.</p>
-   *
-   * <p>The {@link List} returned by this method is mutable.</p>
-   *
-   * @return a new {@link List}; never {@code null}
-   *
-   * @see #iterator()
-   *
-   * @see #asList()
-   */
-  public List<Throwable> toList() {
-    return new ArrayList<Throwable>(this.asList());
   }
 
   /**

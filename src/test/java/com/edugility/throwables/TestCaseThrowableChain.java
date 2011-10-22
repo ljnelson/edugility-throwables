@@ -80,6 +80,7 @@ public class TestCaseThrowableChain {
     // the ThrowableChain's cause).  It is instead the SECOND
     // exception added.
     assertEquals("2", t.getMessage());
+    assertEquals("1", this.chain.getCause().getMessage());
 
     t = i.next();
     assertNotNull(t);
@@ -122,6 +123,9 @@ public class TestCaseThrowableChain {
     assertSame(cause, chain.getCause());
     assertEquals(2, chain.size());
     assertFalse(chain.asList().contains(cause));
+
+    // Adding an exception that is already present has no effect.
+    assertFalse(chain.add(affiliate));
 
   }
   

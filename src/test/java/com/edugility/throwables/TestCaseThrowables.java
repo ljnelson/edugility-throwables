@@ -27,6 +27,7 @@
  */
 package com.edugility.throwables;
 
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -112,18 +113,30 @@ public class TestCaseThrowables {
   }
 
   @Test
-  public void testAsIterable() {
-    Iterable<Throwable> iterable = Throwables.asIterable(null);
-    assertNotNull(iterable);
-    final Iterator<Throwable> iterator = iterable.iterator();
-    assertNotNull(iterator);
-    assertFalse(iterator.hasNext());
-    try {
-      iterator.next();
-      fail();
-    } catch (final NoSuchElementException expected) {
+  public void testWeird() {
+    // TODO: test a throwable that is an Iterable<Throwable> that does
+    // not contain itself
+    final List<Throwable> list = Throwables.toList(new ThrowableCollection());
+    assertNotNull(list);
+    assertEquals(3, list.size());
+  }
 
+  private static final class ThrowableCollection extends Throwable implements Iterable<Throwable> {
+
+    private final List<Throwable> list;
+
+    private ThrowableCollection() {
+      super();
+      this.list = new ArrayList<Throwable>();
+      this.list.add(new Exception("first affiliate"));
+      this.list.add(new Exception("second affiliate"));
     }
+
+    @Override
+    public Iterator<Throwable> iterator() {
+      return this.list.iterator();
+    }
+
   }
 
 }

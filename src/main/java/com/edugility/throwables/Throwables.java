@@ -70,36 +70,6 @@ public final class Throwables {
   }
 
   /**
-   * Returns an {@link Iterable} that can return an {@link Iterator}
-   * over the supplied {@link Throwable} and its {@linkplain
-   * Throwable#getCause() causal chain}.
-   *
-   * <p>This method never returns {@code null}.</p>
-   *
-   * @param t the {@link Throwable} to iterate over; may be {@code null}
-   *
-   * @return an {@link Iterable}; never {@code null}
-   */
-  public static final Iterable<Throwable> asIterable(final Throwable t) {
-    return new ThrowableIterator(t);
-  }
-
-  /**
-   * Returns an {@link Iterator} that iterates over the supplied
-   * {@link Throwable} and its {@linkplain Throwable#getCause() causal
-   * chain}.
-   *
-   * <p>This method never returns {@code null}.</p>
-   *
-   * @param t the {@link Throwable} to iterate over; may be {@code null}
-   *
-   * @return an {@link Iterator}; never {@code null}
-   */
-  public static final Iterator<Throwable> asIterator(final Throwable t) {
-    return new ThrowableIterator(t);
-  }
-
-  /**
    * Creates and returns a view of the supplied {@link Throwable} and
    * its {@linkplain Throwable#getCause() causal chain} as a {@link
    * List}.
@@ -119,33 +89,58 @@ public final class Throwables {
    * Throwable} is {@code null}
    */
   public static final List<Throwable> toList(final Throwable throwable) {
+    final List<Throwable> l = toList(throwable, null);
+    if (l == null) {
+      return Collections.emptyList();
+    } else {
+      return Collections.unmodifiableList(l);
+    }
+  }
+
+  private static final List<Throwable> toList(final Throwable throwable, List<Throwable> l) {
     final List<Throwable> returnValue;
     if (throwable == null) {
       returnValue = Collections.emptyList();
     } else {
+
       final Iterable<?> throwables;
       if (throwable instanceof Iterable) {
         throwables = (Iterable<?>)throwable;
       } else {
         throwables = Collections.singleton(throwable);
       }
-      final List<Throwable> l = new ArrayList<Throwable>();
+
+      if (l == null) {
+        l = new ArrayList<Throwable>();
+      }
+
       final Iterator<?> iterator = throwables.iterator();
       boolean found = false;
       if (iterator != null) {
+
         while (iterator.hasNext()) {
           final Object o = iterator.next();
           if (o instanceof Throwable) {
+
             final Throwable t = (Throwable)o;
+            found = found || t == throwable;
             l.add(t);
-            Throwable cause = t;
-            while ((cause = cause.getCause()) != null && cause != t) {
-              l.add(cause);
-            }
+
+            final Throwable cause = t.getCause();
+            if (cause != null) {
+              assert cause != t; // shouldn't be possible according to Throwable contract
+              final List<Throwable> list = toList(cause, l); // recursive call
+              assert list == l;
+              found = found || l.contains(throwable);
+            }              
+     
           }
         }
       }
-      returnValue = Collections.unmodifiableList(l);
+      if (!found) {
+        l.add(0, throwable);
+      }
+      returnValue = l;
     }
     return returnValue;
   }
