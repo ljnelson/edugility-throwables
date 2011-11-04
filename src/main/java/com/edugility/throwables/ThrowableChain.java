@@ -30,7 +30,6 @@ package com.edugility.throwables;
 import java.io.PrintStream;
 import java.io.PrintWriter;
 
-import java.util.ArrayList;
 import java.util.Collection; // for javadoc only
 import java.util.Collections;
 import java.util.Iterator;
@@ -261,7 +260,10 @@ public class ThrowableChain extends Exception implements Iterable<Throwable> {
   @Override
   public void printStackTrace(final PrintStream s) {
     if (s != null) {
-      if (this.size() == 1) {
+      final int size = this.size();
+      if (size < 1) {
+        throw new IllegalStateException(String.format("this.size() < 1: %d", size));
+      } else if (size == 1) {
         // Just us
         super.printStackTrace(s);
       } else {
@@ -296,7 +298,10 @@ public class ThrowableChain extends Exception implements Iterable<Throwable> {
   @Override
   public void printStackTrace(final PrintWriter w) {
     if (w != null) {
-      if (this.size() == 1) {
+      final int size = this.size();
+      if (size < 1) {
+        throw new IllegalStateException(String.format("this.size() < 1: %d", size));
+      } else if (size == 1) {
         // Just us
         super.printStackTrace(w);
       } else {
