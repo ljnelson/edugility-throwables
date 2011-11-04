@@ -76,10 +76,7 @@ public final class Throwables {
    *
    * <p>This method never returns {@code null}.</p>
    *
-   * <p>This method typically allocates a new {@link List} when
-   * called.  If only the ability to iterate is desired, see the
-   * {@link #asIterable(Throwable)} or {@link #asIterator(Throwable)}
-   * methods; neither of those methods creates a list.</p>
+   * <p>This method allocates a new {@link List} when called.</p>
    *
    * @param throwable the {@link Throwable} in question; may be {@code null}
    *

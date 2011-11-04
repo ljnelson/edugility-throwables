@@ -127,15 +127,6 @@
         <plugin>
           <artifactId>maven-javadoc-plugin</artifactId>
           <version>${mavenJavadocPluginVersion}</version>
-          <configuration>
-            <detectLinks>false</detectLinks>
-            <links>
-              <link>http://download.oracle.com/javaee/6/api/</link>
-            </links>
-            <show>private</show>
-            <sourcetab>2</sourcetab>
-            <stylesheet>maven</stylesheet>
-          </configuration>
         </plugin>
 
         <plugin>
@@ -160,8 +151,6 @@
             <delimiters>
               <delimiter>${*}</delimiter>
             </delimiters>
-            <encoding>UTF8</encoding>
-            <escapeString>\</escapeString>
             <useDefaultDelimiters>false</useDefaultDelimiters>
           </configuration>
         </plugin>
@@ -242,13 +231,27 @@
     <mavenVersion>3.0.3</mavenVersion>
     <versionsMavenPluginVersion>1.2</versionsMavenPluginVersion>
 
-    <!-- Other -->
+    <!-- Other Properties -->
     <loggingConfigFile>${basedir}/logging.properties</loggingConfigFile>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
+    <!-- maven-compiler-plugin Properties -->
     <maven.compiler.showWarnings>true</maven.compiler.showWarnings>
     <maven.compiler.source>1.6</maven.compiler.source>
     <maven.compiler.target>1.6</maven.compiler.target>
+
+    <!-- maven-resources-plugin Properties -->
     <maven.resources.escapeString>\</maven.resources.escapeString>
-    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
+    <!-- maven-javadoc-plugin Properties -->
+    <detectLinks>false</detectLinks>
+    <links>http://download.oracle.com/javaee/6/api/</links>
+    <show>private</show>
+    <sourcetab>2</sourcetab>
+    <stylesheet>maven</stylesheet>
+
+    <!-- maven-surefire-plugin Properties -->
+
     <surefire.useFile>false</surefire.useFile>
 
   </properties>
@@ -258,15 +261,6 @@
       <plugin>
         <artifactId>maven-javadoc-plugin</artifactId>
         <version>${mavenJavadocPluginVersion}</version>
-        <configuration>
-          <detectLinks>false</detectLinks>
-          <links>
-            <link>http://download.oracle.com/javaee/6/api/</link>
-          </links>
-          <show>private</show>
-          <sourcetab>2</sourcetab>
-          <stylesheet>maven</stylesheet>
-        </configuration>
       </plugin>
     </plugins>
   </reporting>
