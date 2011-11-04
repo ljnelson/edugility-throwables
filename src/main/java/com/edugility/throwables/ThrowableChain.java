@@ -204,7 +204,7 @@ public class ThrowableChain extends Exception implements Iterable<Throwable> {
    * @return an immutable {@link List} of this {@link
    * ThrowableChain}'s affiliates; never {@code null}
    */
-  public final List<Throwable> getAffiliates() {
+  public final List<Throwable> getAffiliatedThrowables() {
     final int size = this.size();
     if (size < 1) {
       // Protect against bad size() overrides.
