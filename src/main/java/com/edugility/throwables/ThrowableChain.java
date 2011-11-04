@@ -176,20 +176,44 @@ public class ThrowableChain extends Exception implements Iterable<Throwable> {
 
   /**
    * Returns a new {@linkplain Collections#unmodifiableList(List)
-   * unmodifiable view} of this {@link ThrowableChain}'s list of
-   * affiliated {@link Throwable}s.  No copying occurs during this
-   * operation.
+   * unmodifiable view} of this {@link ThrowableChain}.  The returned
+   * {@link List} is non-{@code null}, is non-{@linkplain
+   * Collection#isEmpty() empty}, safe for iteration by multiple
+   * threads without synchronization or locking, contains this {@link
+   * ThrowableChain} itself as the first element, and is behaviorally
+   * identical to the {@link List} instances returned by the {@link
+   * Collections#unmodifiableList(List)} method.
    *
-   * <p>The returned {@link List} is never {@code null}, never
-   * {@linkplain Collection#isEmpty() empty},
-   * <strong>immutable</strong> and safe for iteration by multiple
-   * threads without synchronization or locking.</p>
-   *
-   * @return a read-only view of the underlying list of affiliated
-   * {@link Throwable}s; never {@code null}
+   * @return a read-only {@link List} view of this {@link
+   * ThrowableChain} and the underlying list of affiliated {@link
+   * Throwable}s; never {@code null}
    */
   public final List<Throwable> asList() {
     return Collections.unmodifiableList(this.list);
+  }
+
+  /**
+   * Returns a new {@link List} of this {@link ThrowableChain}'s
+   * affiliate {@link Throwable}s.  The returned {@link List} is
+   * guaranteed to be non-{@code null}, to be safe for iteration by
+   * multiple threads without synchronization or locking, to be
+   * behaviorally identical to the {@link List} instances returned by
+   * the {@link Collections#unmodifiableList(List)} and to not contain
+   * this {@link ThrowableChain}.
+   *
+   * @return an immutable {@link List} of this {@link
+   * ThrowableChain}'s affiliates; never {@code null}
+   */
+  public final List<Throwable> getAffiliates() {
+    final int size = this.size();
+    if (size < 1) {
+      // Protect against bad size() overrides.
+      throw new IllegalStateException(String.format("this.size() < 1: %d", size));
+    } else if (size == 1) {
+      return Collections.emptyList();
+    } else {
+      return Collections.unmodifiableList(this.list.subList(1, size));
+    }
   }
 
   /**
