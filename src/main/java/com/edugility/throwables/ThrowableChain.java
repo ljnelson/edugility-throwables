@@ -30,7 +30,7 @@ package com.edugility.throwables;
 import java.io.PrintStream;
 import java.io.PrintWriter;
 
-import java.util.Collection; // for javadoc only
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -40,9 +40,9 @@ import java.util.concurrent.CopyOnWriteArrayList;
 /**
  * An {@link Exception} that is also holds a modifiable list of other
  * {@link Throwable}s that are not connected to the direct {@linkplain
- * Throwable#getCause() causation chain}, but are affiliated
- * nonetheless.  Instances of this class are particularly useful when
- * dealing with {@link Throwable}s in {@code finally} blocks.
+ * Throwable#getCause() causal chain}, but are affiliated nonetheless.
+ * Instances of this class are particularly useful when dealing with
+ * {@link Throwable}s in {@code finally} blocks.
  *
  * <p>A {@link ThrowableChain} always contains itself, so the return
  * value of its {@link #size()} method is always at least {@code
@@ -52,7 +52,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
  *
  * @since 1.0
  */
-public class ThrowableChain extends Exception implements Iterable<Throwable> {
+public class ThrowableChain extends Exception implements Collection<Throwable> {
 
   /**
    * The {@link List} containing additional {@link Throwable}s.  This
@@ -135,6 +135,7 @@ public class ThrowableChain extends Exception implements Iterable<Throwable> {
    * @return {@code true} if the supplied {@link Throwable} was
    * actually added; {@code false} in all other cases
    */
+  @Override
   public final boolean add(final Throwable throwable) {
     boolean returnValue = false;
     assert this.list != null;
@@ -151,26 +152,93 @@ public class ThrowableChain extends Exception implements Iterable<Throwable> {
     return returnValue;
   }
 
+  @Override
+  public final boolean addAll(final Collection<? extends Throwable> c) {
+    boolean returnValue = false;
+    if (c != null && !c.isEmpty()) {
+      for (final Throwable t : c) {
+        if (t != null) {
+          returnValue = returnValue || this.add(t);
+        }
+      }
+    }
+    return returnValue;
+  }
+
   /**
    * Removes the first instance of the supplied {@link Throwable} from
    * this {@link ThrowableChain}'s list of affiliated {@link
-   * Throwable}s, provided that it is not (a) this {@link
-   * ThrowableChain}, (b) {@code null}, or (c) this {@link
-   * ThrowableChain}'s {@linkplain #getCause() cause}.
+   * Throwable}s, provided that it is not {@code null} or this {@link
+   * ThrowableChain} itself.
    *
    * @param throwable the affiliated {@link Throwable} to remove
-   * provided it meets the conditions described; may be {@code null}
-   * in which case no action will be taken
+   * provided it meets the conditions described
    *
    * @return {@code true} if this {@link ThrowableChain} actually
    * removed the supplied {@link Throwable}; {@code false} otherwise
+   *
+   * @exception UnsupportedOperationException if {@code throwable} is
+   * this {@link ThrowableChain}
    */
-  public final boolean remove(final Throwable throwable) {
+  @Override
+  public final boolean remove(final Object throwable) {
+    if (throwable == this) {
+      throw new UnsupportedOperationException(new IllegalArgumentException("Cannot remove this ThrowableChain from itself"));
+    }
+    return this.list.remove(throwable);
+  }
+
+  @Override
+  public final boolean retainAll(final Collection<?> c) {
+    if (c == null || c.isEmpty()) {
+      throw new UnsupportedOperationException(new IllegalArgumentException("Cannot call retainAll() with a null or empty Collection"));
+    }
+    if (!c.contains(this)) {
+      throw new UnsupportedOperationException(new IllegalArgumentException("Cannot effectively remove this ThrowableChain"));
+    }
+    return this.list.retainAll(c);
+  }
+
+  @Override
+  public final boolean removeAll(final Collection<?> c) {
+    if (c != null && c.contains(this)) {
+      throw new UnsupportedOperationException(new IllegalArgumentException("Cannot call removeAll() with a Collection that contains this ThrowableChain"));
+    }
+    return this.list.removeAll(c);
+  }
+  
+  @Override
+  public final void clear() {
+    throw new UnsupportedOperationException("clear is unsupported because a ThrowableChain always has itself as its first element");
+  }
+
+  @Override
+  public final boolean contains(final Object o) {
+    return o == this || (o != null && this.list.contains(o));
+  }
+
+  @Override
+  public final boolean containsAll(final Collection<?> stuff) {
     boolean returnValue = false;
-    if (throwable != null && throwable != this && throwable != this.getCause()) {
-      returnValue = this.list.remove(throwable);
+    if (stuff != null && !stuff.isEmpty()) {
+      returnValue = this.list.containsAll(stuff);
     }
     return returnValue;
+  }
+
+  @Override
+  public final boolean isEmpty() {
+    return false;
+  }
+
+  @Override
+  public final Object[] toArray() {
+    return this.list.toArray();
+  }
+
+  @Override
+  public final <T> T[] toArray(final T[] a) {
+    return this.list.toArray(a);
   }
 
   /**
@@ -222,6 +290,7 @@ public class ThrowableChain extends Exception implements Iterable<Throwable> {
    * @return the size of this {@link ThrowableChain}&mdash;a positive
    * integer greater than or equal to {@code 1}
    */
+  @Override
   public int size() {
     return this.list.size();
   }
@@ -231,6 +300,10 @@ public class ThrowableChain extends Exception implements Iterable<Throwable> {
    * {@linkplain #add(Throwable) contained <tt>Throwable</tt>s}.
    *
    * <p>This method never returns {@code null}.</p>
+   *
+   * <p>The {@link Iterator} returned does <em>not</em> iterate over
+   * any given {@link Throwable}'s {@linkplain Throwable#getCause()
+   * causal chain}.</p>
    *
    * @return an {@link Iterator}; never {@code null}; the first
    * element of the {@link Iterator} will always be this {@link

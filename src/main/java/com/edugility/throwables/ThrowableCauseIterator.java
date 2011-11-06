@@ -31,7 +31,8 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 
 /**
- * An {@link Iterator} that iterates over a {@link Throwable}'s <i>causal chain</i>.
+ * An {@link Iterator} that iterates over a {@link Throwable}'s
+ * <i>causal chain</i>.
  *
  * @author <a href="mailto:ljnelson@gmail.com">Laird Nelson</a>
  *
@@ -48,50 +49,24 @@ public final class ThrowableCauseIterator implements Iterable<Throwable>, Iterat
   private Throwable t;
 
   /**
-   * Whether the first element of this {@link
-   * ThrowableCauseIterator}'s iteration will be the initially
-   * supplied {@link Throwable} or the value of its {@link
-   * Throwable#getCause()} method.
+   * Indicates whether iteration has started.  This field is {@code
+   * true} only before the first call to the {@link #next()} method.
    */
-  private boolean includeRoot;
+  private boolean notYetStarted;
 
   /**
    * Creates a new {@link ThrowableCauseIterator}.  The first element
    * of this {@link ThrowableCauseIterator}'s iteration will be the
-   * supplied {@link Throwable}'s {@linkplain Throwable#getCause()
-   * cause}.
-   *
-   * <p>This constructor calls {@link
-   * #ThrowableCauseIterator(Throwable, boolean)} with {@code false}
-   * as the second parameter value.</p>
+   * supplied {@link Throwable}, followed by its {@linkplain
+   * Throwable#getCause() cause}, and its cause's cause, and so on.
    *
    * @param t the {@link {@link Throwable} to iterate over; may be
    * {@code null}
-   *
-   * @see #ThrowableCauseIterator(Throwable, boolean)
    */
   public ThrowableCauseIterator(final Throwable t) {
-    this(t, false);
-  }
-
-  /**
-   * Creates a new {@link ThrowableCauseIterator}.  The first element
-   * of this {@link ThrowableCauseIterator}'s iteration will be the
-   * supplied {@link Throwable}, if the {@code includeRoot}
-   * parameter's value is {@code true}, or the supplied {@link
-   * Throwable}'s {@linkplain Throwable#getCause() cause} otherwise.
-   *
-   * @param t the {@link Throwable} to iterate over; may be {@code
-   * null}
-   *
-   * @param includeRoot whether the first element of the iteration
-   * will be the supplied {@link Throwable} or the supplied {@link
-   * Throwable}'s {@linkplain Throwable#getCause() cause}
-   */
-  public ThrowableCauseIterator(final Throwable t, final boolean includeRoot) {
     super();
+    this.notYetStarted = true;
     this.t = t;
-    this.includeRoot = includeRoot;
   }
 
   /**
@@ -113,7 +88,7 @@ public final class ThrowableCauseIterator implements Iterable<Throwable>, Iterat
    */
   @Override
   public final boolean hasNext() {
-    return this.t != null && (this.includeRoot || this.t.getCause() != null);
+    return this.t != null && (this.notYetStarted || this.t.getCause() != null);
   }
 
   /**
@@ -127,8 +102,8 @@ public final class ThrowableCauseIterator implements Iterable<Throwable>, Iterat
    */
   @Override
   public final Throwable next() {
-    if (this.includeRoot) {
-      this.includeRoot = false;
+    if (this.notYetStarted) {
+      this.notYetStarted = false;
     } else if (this.t != null) {
       this.t = this.t.getCause();
     }
@@ -152,8 +127,8 @@ public final class ThrowableCauseIterator implements Iterable<Throwable>, Iterat
    * Returns the {@link String} representation of the {@link
    * Throwable} that was supplied to this {@link
    * ThrowableCauseIterator}'s {@linkplain
-   * #ThrowableCauseIterator(Throwable, boolean) constructor}, or
-   * "{@code null" if the supplied {@link Throwable} was {@code null}.
+   * #ThrowableCauseIterator(Throwable) constructor}, or "{@code null"
+   * if the supplied {@link Throwable} was {@code null}.
    *
    * @return a {@link String} representation of this {@link
    * ThrowableCauseIterator}; never {@code null}
