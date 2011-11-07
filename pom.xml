@@ -21,7 +21,7 @@
     <name>Laird Nelson</name>
     <url>http://about.me/lairdnelson</url>
   </organization>
-  
+
   <licenses>
     <license>
       <comments>The MIT License</comments>
@@ -30,7 +30,7 @@
       <url>http://www.opensource.org/licenses/MIT</url>
     </license>
   </licenses>
-  
+
   <scm>
     <connection>scm:git:git@github.com:ljnelson/${project.artifactId}.git</connection>
     <developerConnection>scm:git:git@github.com:ljnelson/${project.artifactId}.git</developerConnection>
@@ -86,6 +86,9 @@
         <plugin>
           <artifactId>maven-compiler-plugin</artifactId>
           <version>${mavenCompilerPluginVersion}</version>
+          <configuration>
+            <compilerArgument>-Xlint:all</compilerArgument>
+          </configuration>
         </plugin>
 
         <plugin>
@@ -220,7 +223,7 @@
     <mavenJavadocPluginVersion>2.8</mavenJavadocPluginVersion>
     <mavenPluginPluginVersion>2.9</mavenPluginPluginVersion>
     <mavenProjectInfoReportsPlugin>2.4</mavenProjectInfoReportsPlugin>
-    <mavenReleasePluginVersion>2.2.1</mavenReleasePluginVersion>    
+    <mavenReleasePluginVersion>2.2.1</mavenReleasePluginVersion>
     <mavenResourcesPluginVersion>2.5</mavenResourcesPluginVersion>
     <mavenScmManagerPlexusVersion>${mavenScmPluginVersion}</mavenScmManagerPlexusVersion>
     <mavenScmPluginVersion>1.5</mavenScmPluginVersion>
@@ -236,9 +239,11 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
     <!-- maven-compiler-plugin Properties -->
+    <maven.compiler.showDeprecation>true</maven.compiler.showDeprecation>
     <maven.compiler.showWarnings>true</maven.compiler.showWarnings>
     <maven.compiler.source>1.6</maven.compiler.source>
     <maven.compiler.target>1.6</maven.compiler.target>
+    <maven.compiler.verbose>true</maven.compiler.verbose>
 
     <!-- maven-resources-plugin Properties -->
     <maven.resources.escapeString>\</maven.resources.escapeString>

@@ -9,10 +9,10 @@
  * modify, merge, publish, distribute, sublicense and/or sell copies
  * of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -31,7 +31,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
-import java.util.NoSuchElementException;
 
 /**
  * A class to assist with processing {@link Throwable} instances.
@@ -129,8 +128,8 @@ public final class Throwables {
               final List<Throwable> list = toList(cause, l); // recursive call
               assert list == l;
               found = found || l.contains(throwable);
-            }              
-     
+            }
+
           }
         }
       }
@@ -162,7 +161,9 @@ public final class Throwables {
    * an instance of the supplied {@link Class}, or {@code null}
    */
   public static final <T extends Throwable> T firstInstance(Throwable t, final Class<T> throwableClass) {
-    return (T)nthInstance(t, new InstanceOfPredicate(throwableClass), 0);
+    @SuppressWarnings("unchecked")
+    final T returnValue = (T)nthInstance(t, new InstanceOfPredicate(throwableClass), 0);
+    return returnValue;
   }
 
   /**
@@ -191,34 +192,24 @@ public final class Throwables {
    * or {@code null}
    */
   public static final <T extends Throwable> T nthInstance(Throwable throwable, final Class<T> throwableClass, int zeroBasedOccurrence) {
-    return (T)nthInstance(throwable, new InstanceOfPredicate(throwableClass), zeroBasedOccurrence);
+    @SuppressWarnings("unchecked")
+    final T returnValue = (T)nthInstance(throwable, new InstanceOfPredicate(throwableClass), zeroBasedOccurrence);
+    return returnValue;
   }
 
   public static final Throwable nthInstance(Throwable throwable, final Predicate predicate, int zeroBasedOccurrence) {
     zeroBasedOccurrence = Math.max(0, zeroBasedOccurrence);
     Throwable returnValue = null;
     if (predicate != null) {
-      final Iterable<?> throwables;
-      if (throwable instanceof Iterable) {
-        throwables = (Iterable<?>)throwable;
-      } else {
-        throwables = Collections.singleton(throwable);
-      }
-      final Iterator<?> iterator = throwables.iterator();
-      if (iterator != null) {
-        while (iterator.hasNext()) {
-          final Object o = iterator.next();
-          if (o instanceof Throwable) {
-            Throwable t = (Throwable)o;
-            int index = 0;
-            while (t != null) {
-              if (predicate.apply(t) && zeroBasedOccurrence == index++) {
-                returnValue = t;
-                break;
-              }
-              t = t.getCause();
-            }
-          }
+      final List<Throwable> list = toList(throwable);
+      assert list != null;
+      // Note: do not use getCause(); the work has already been done
+      int numberOfOccurrences = 0;
+      for (int i = 0; i < list.size(); i++) {
+        final Throwable t = list.get(i);
+        if (t != null && predicate.apply(t) && zeroBasedOccurrence == numberOfOccurrences++) {
+          returnValue = t;
+          break;
         }
       }
     }
@@ -265,7 +256,7 @@ public final class Throwables {
    * @since 1.0-SNAPSHOT
    */
   public static interface Predicate {
-    
+
     /**
      * Evaluates the supplied {@link Throwable} for fitness and
      * returns {@code true} if the supplied {@link Throwable} is
@@ -324,7 +315,16 @@ public final class Throwables {
      */
     @Override
     public final boolean apply(final Throwable t) {
-      return t != null && this.cls != null && this.cls.isInstance(t);
+      if (t == null) {
+        return false;
+      }
+      if (this.cls == null) {
+        return false;
+      }
+      if (!this.cls.isInstance(t)) {
+        return false;
+      }
+      return true;
     }
 
   }

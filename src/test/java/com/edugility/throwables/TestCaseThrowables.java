@@ -9,10 +9,10 @@
  * modify, merge, publish, distribute, sublicense and/or sell copies
  * of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -30,7 +30,6 @@ package com.edugility.throwables;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.NoSuchElementException;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -122,6 +121,14 @@ public class TestCaseThrowables {
   }
 
   private static final class ThrowableCollection extends Throwable implements Iterable<Throwable> {
+
+    /**
+     * A serial version identifier uniquely identifying the version of
+     * this class.  See the <a
+     * href="http://download.oracle.com/javase/6/docs/api/java/io/Serializable.html">documentation
+     * for the {@code Serializable} class</a> for details.
+     */
+    private static final long serialVersionUID = 1L;
 
     private final List<Throwable> list;
 
