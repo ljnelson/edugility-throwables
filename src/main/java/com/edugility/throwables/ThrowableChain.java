@@ -152,6 +152,16 @@ public class ThrowableChain extends Exception implements Collection<Throwable> {
     return returnValue;
   }
 
+  /**
+   * Adds every non-{@code null} element contained by the supplied
+   * {@link Collection} of {@link Throwable}s to this {@link
+   * ThrowableChain}.
+   *
+   * @param c the {@link Collection} of {@link Throwable}s; may be
+   * {@code null} in which case no action is taken
+   *
+   * @return {@code true} if at least one element was actually added
+   */
   @Override
   public final boolean addAll(final Collection<? extends Throwable> c) {
     boolean returnValue = false;
@@ -188,6 +198,26 @@ public class ThrowableChain extends Exception implements Collection<Throwable> {
     return this.list.remove(throwable);
   }
 
+  /**
+   * Causes this {@link ThrowableChain} to keep all of the elements
+   * found in the supplied {@link Collection} and to discard the rest.
+   *
+   * @param c the {@link Collection} containing the elements to
+   * retain; must not be {@code null} or {@linkplain
+   * Collection#isEmpty() empty}; must contain this {@link
+   * ThrowableChain} (because it is impossible for a {@link
+   * ThrowableChain} to discard itself)
+   *
+   * @return {@code true} if the contents of this {@link
+   * ThrowableChain} were actually affected by this method invocation
+   *
+   * @exception UnsupportedOperationException if {@code c} is {@code
+   * null} or {@linkplain Collection#isEmpty() empty}, or if it does
+   * <em>not</em> contain this {@link ThrowableChain} (a {@link
+   * ThrowableChain} must always contain itself as an element)
+   *
+   * @see #size()
+   */
   @Override
   public final boolean retainAll(final Collection<?> c) {
     if (c == null || c.isEmpty()) {
@@ -199,43 +229,117 @@ public class ThrowableChain extends Exception implements Collection<Throwable> {
     return this.list.retainAll(c);
   }
 
+  /**
+   * Removes all elements contained by the supplied {@link Collection}
+   * found in this {@link ThrowableChain}.
+   *
+   * @param c the {@link Collection}; may be {@code null} but, if
+   * non-{@code null}, must not {@linkplain
+   * Collection#contains(Object) contain} this {@link ThrowableChain}
+   *
+   * @return {@code true} if this {@link ThrowableChain} was changed
+   * as a result of an invocation of this method
+   *
+   * @exception UnsupportedOperationException if the supplied {@link
+   * Collection} is non-{@code null} and contains this {@link
+   * ThrowableChain}
+   */
   @Override
   public final boolean removeAll(final Collection<?> c) {
-    if (c != null && c.contains(this)) {
+    if (c == null || c.isEmpty()) {
+      return false;
+    } else if (c.contains(this)) {
       throw new UnsupportedOperationException(new IllegalArgumentException("Cannot call removeAll() with a Collection that contains this ThrowableChain"));
+    } else {
+      return this.list.removeAll(c);
     }
-    return this.list.removeAll(c);
   }
   
+  /**
+   * Throws an {@link UnsupportedOperationException}.
+   *
+   * @exception UnsupportedOperationException if invoked
+   */
   @Override
   public final void clear() {
     throw new UnsupportedOperationException("clear is unsupported because a ThrowableChain always has itself as its first element");
   }
 
+  /**
+   * Returns {@code true} if this {@link ThrowableChain} contains the
+   * supplied {@link Object}.
+   *
+   * @param o the {@link Object} to look for; may be {@code null}
+   * 
+   * @return {@code true} if this {@link ThrowableChain} contains the
+   * supplied {@link Object}
+   */
   @Override
   public final boolean contains(final Object o) {
     return o == this || (o != null && this.list.contains(o));
   }
 
+  /**
+   * Returns {@code true} if all the elements of the supplied {@link
+   * Collection} are contained by this {@link ThrowableChain}.
+   *
+   * @param stuff the {@link Collection} to test; may be {@code null}
+   *
+   * @return {@code true} if all the elements of the supplied {@link
+   * Collection} are contained by this {@link ThrowableChain}
+   */
   @Override
   public final boolean containsAll(final Collection<?> stuff) {
-    boolean returnValue = false;
-    if (stuff != null && !stuff.isEmpty()) {
+    boolean returnValue = stuff == this;
+    if (!returnValue && stuff != null && !stuff.isEmpty()) {
       returnValue = this.list.containsAll(stuff);
     }
     return returnValue;
   }
 
+  /**
+   * Returns {@code false}.
+   *
+   * @return {@code false} in all cases
+   */
   @Override
   public final boolean isEmpty() {
     return false;
   }
 
+  /**
+   * Returns a new {@link Object} array of this {@link
+   * ThrowableChain}'s contents.  This method never returns {@code
+   * null}.
+   *
+   * @return a new {@link Object} array of this {@link
+   * ThrowableChain}'s contents; never {@code null}
+   *
+   * @see Collection#toArray()
+   */
   @Override
   public final Object[] toArray() {
     return this.list.toArray();
   }
 
+  /**
+   * Attempts to fill and return the supplied array with the contents
+   * of this {@link ThrowableChain}.  If the contents of this {@link
+   * ThrowableChain} will not fit into the supplied array, a new array
+   * will be allocated.
+   *
+   * <p>This method never returns {@code null}.</p>
+   *
+   * @param a the array to fill and return if possible; must not be
+   * {@code null}
+   *
+   * @return the contents of this {@link ThrowableChain} as an array;
+   * never {@code null}
+   *
+   * @exception NullPointerException if {@code a} is {@code null}
+   *
+   * @see Collection#toArray(Object[])
+   */
   @Override
   public final <T> T[] toArray(final T[] a) {
     return this.list.toArray(a);

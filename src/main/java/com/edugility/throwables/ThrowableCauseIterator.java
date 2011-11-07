@@ -60,8 +60,8 @@ public final class ThrowableCauseIterator implements Iterable<Throwable>, Iterat
    * supplied {@link Throwable}, followed by its {@linkplain
    * Throwable#getCause() cause}, and its cause's cause, and so on.
    *
-   * @param t the {@link {@link Throwable} to iterate over; may be
-   * {@code null}
+   * @param t the {@link Throwable} to iterate over; may be {@code
+   * null}
    */
   public ThrowableCauseIterator(final Throwable t) {
     super();
@@ -127,8 +127,8 @@ public final class ThrowableCauseIterator implements Iterable<Throwable>, Iterat
    * Returns the {@link String} representation of the {@link
    * Throwable} that was supplied to this {@link
    * ThrowableCauseIterator}'s {@linkplain
-   * #ThrowableCauseIterator(Throwable) constructor}, or "{@code null"
-   * if the supplied {@link Throwable} was {@code null}.
+   * #ThrowableCauseIterator(Throwable) constructor}, or "{@code
+   * null}" if the supplied {@link Throwable} was {@code null}.
    *
    * @return a {@link String} representation of this {@link
    * ThrowableCauseIterator}; never {@code null}
