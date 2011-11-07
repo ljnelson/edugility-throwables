@@ -251,7 +251,6 @@
     <stylesheet>maven</stylesheet>
 
     <!-- maven-surefire-plugin Properties -->
-
     <surefire.useFile>false</surefire.useFile>
 
   </properties>
@@ -264,6 +263,5 @@
       </plugin>
     </plugins>
   </reporting>
-
 
 </project>

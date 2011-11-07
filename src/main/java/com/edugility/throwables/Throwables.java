@@ -162,7 +162,7 @@ public final class Throwables {
    * an instance of the supplied {@link Class}, or {@code null}
    */
   public static final <T extends Throwable> T firstInstance(Throwable t, final Class<T> throwableClass) {
-    return nthInstance(t, throwableClass, 0);
+    return (T)nthInstance(t, new InstanceOfPredicate(throwableClass), 0);
   }
 
   /**
@@ -191,9 +191,13 @@ public final class Throwables {
    * or {@code null}
    */
   public static final <T extends Throwable> T nthInstance(Throwable throwable, final Class<T> throwableClass, int zeroBasedOccurrence) {
+    return (T)nthInstance(throwable, new InstanceOfPredicate(throwableClass), zeroBasedOccurrence);
+  }
+
+  public static final Throwable nthInstance(Throwable throwable, final Predicate predicate, int zeroBasedOccurrence) {
     zeroBasedOccurrence = Math.max(0, zeroBasedOccurrence);
-    T returnValue = null;
-    if (throwableClass != null) {
+    Throwable returnValue = null;
+    if (predicate != null) {
       final Iterable<?> throwables;
       if (throwable instanceof Iterable) {
         throwables = (Iterable<?>)throwable;
@@ -208,11 +212,9 @@ public final class Throwables {
             Throwable t = (Throwable)o;
             int index = 0;
             while (t != null) {
-              if (throwableClass.isInstance(t)) {
-                if (zeroBasedOccurrence == index++) {
-                  returnValue = throwableClass.cast(t);
-                  break;
-                }
+              if (predicate.apply(t) && zeroBasedOccurrence == index++) {
+                returnValue = t;
+                break;
               }
               t = t.getCause();
             }
@@ -253,6 +255,78 @@ public final class Throwables {
       }
     }
     return returnValue;
+  }
+
+  /**
+   * A predicate that evaluates a {@link Throwable} for some user-defined condition.
+   *
+   * @author <a href="mailto:ljnelson@gmail.com">Laird Nelson</a>
+   *
+   * @since 1.0-SNAPSHOT
+   */
+  public static interface Predicate {
+    
+    /**
+     * Evaluates the supplied {@link Throwable} for fitness and
+     * returns {@code true} if the supplied {@link Throwable} is
+     * deemed fit.
+     *
+     * @param t the {@link Throwable} in question; may be {@code null}
+     *
+     * @return {@code true} if the supplied {@link Throwable} is fit;
+     * {@code false} otherwise
+     */
+    public boolean apply(final Throwable t);
+
+  }
+
+  /**
+   * A {@link Predicate} that determines whether a {@link Throwable}
+   * is an instance of a given {@link Class}.
+   *
+   * @author <a href="mailto:ljnelson@gmail.com">Laird Nelson</a>
+   *
+   * @since 1.0-SNAPSHOT
+   */
+  private static final class InstanceOfPredicate implements Predicate {
+
+    /**
+     * The {@link Class} to use for the test.
+     *
+     * <p>This field may be {@code null}.</p>
+     */
+    private final Class<? extends Throwable> cls;
+
+    /**
+     * Creates a new {@link InstanceOfPredicate}.
+     *
+     * @param cls the {@link Class} to use for the predicate test; may
+     * be {@code null}
+     */
+    private InstanceOfPredicate(final Class<? extends Throwable> cls) {
+      super();
+      this.cls = cls;
+    }
+
+    /**
+     * Returns {@code true} if the supplied {@link Throwable} is an
+     * instance of the {@link Class} supplied to this {@link
+     * InstanceOfPredicate}'s {@linkplain
+     * #Throwables.InstanceOfPredicate(Class) constructor}.
+     *
+     * @param t the {@link Throwable} to test; may be {@code null}
+     *
+     * @return {@code true} if the supplied {@link Throwable} is an
+     * instance of the {@link Class} supplied to this {@link
+     * InstanceOfPredicate}'s {@linkplain
+     * #Throwables.InstanceOfPredicate(Class) constructor}; {@code
+     * false} in all other cases
+     */
+    @Override
+    public final boolean apply(final Throwable t) {
+      return t != null && this.cls != null && this.cls.isInstance(t);
+    }
+
   }
 
 }

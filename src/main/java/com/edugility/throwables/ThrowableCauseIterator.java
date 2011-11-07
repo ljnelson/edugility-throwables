@@ -40,6 +40,11 @@ import java.util.NoSuchElementException;
  */
 public final class ThrowableCauseIterator implements Iterable<Throwable>, Iterator<Throwable> {
   
+  /*
+   * Note to self and future maintainers: Please do not get clever and
+   * make this class extend Exception.
+   */
+
   /**
    * The {@link Throwable} to iterate over.  This field may be {@code
    * null}.
