@@ -251,7 +251,6 @@
     <!-- maven-javadoc-plugin Properties -->
     <detectLinks>false</detectLinks>
     <links>http://download.oracle.com/javaee/6/api/</links>
-    <show>private</show>
     <sourcetab>2</sourcetab>
     <stylesheet>maven</stylesheet>
 

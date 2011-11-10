@@ -382,8 +382,8 @@ public class ThrowableChain extends Exception implements Collection<Throwable> {
    * guaranteed to be non-{@code null}, to be safe for iteration by
    * multiple threads without synchronization or locking, to be
    * behaviorally identical to the {@link List} instances returned by
-   * the {@link Collections#unmodifiableList(List)} and to not contain
-   * this {@link ThrowableChain}.
+   * the {@link Collections#unmodifiableList(List)} and to
+   * <em>not</em> contain this {@link ThrowableChain}.
    *
    * @return an immutable {@link List} of this {@link
    * ThrowableChain}'s affiliates; never {@code null}
@@ -434,8 +434,6 @@ public class ThrowableChain extends Exception implements Collection<Throwable> {
   }
 
   /**
-   * {@inheritDoc}
-   *
    * <p>Prints the stack trace of this {@link ThrowableChain} and then
    * of every {@linkplain #iterator() <tt>Throwable</tt> contained by
    * it}.  Each stack trace is preceded by the following text (quoted

@@ -211,7 +211,7 @@ public final class Throwables {
    * {@code 0} will return the first {@link Throwable} that matches,
    * {@code 1} will return the second one, and so on.
    *
-   * @return the {@code n}<sup>th</sup> {@link Throwable} in the
+   * @return the <i>n</i><sup>th</sup> {@link Throwable} in the
    * causal chain that is an instance of the supplied {@link Class},
    * or {@code null}
    */
@@ -221,20 +221,47 @@ public final class Throwables {
     return returnValue;
   }
 
+  /**
+   * Returns the <i>n</i><sup>th</sup> occurrence of a {@link
+   * Throwable}&mdash;in the supplied {@link Throwable}'s {@linkplain
+   * Throwable#getCause() causal chain}&mdash;that is {@linkplain
+   * Throwables.Predicate#apply(Throwable) accepted by the supplied
+   * <tt>Predicate</tt>}, where <i>n</i> is equal to the supplied
+   * {@code zeroBasedOccurrence} parameter value plus one.
+   *
+   * <p>This method may return {@code null}.</p>
+   * 
+   * @param throwable the {@link Throwable} to investigate; may be
+   * {@code null} in which case {@code null} will be returned
+   * 
+   * @param predicate the {@link Throwables.Predicate} to use to
+   * evaluate fitness; may be {@code null} in which case this method
+   * will behave as though a {@link Throwables.Predicate} had been
+   * supplied to it that returns {@code true} in all cases from its
+   * {@link Throwables.Predicate#apply(Throwable)} method
+   *
+   * @param zeroBasedOccurrence which occurrence to return, starting
+   * at {@code 0}
+   * 
+   * @return the {@code zeroBasedOccurrence + 1}<sup>th</sup>
+   * occurrence of a {@link Throwable}&mdash;in the supplied {@link
+   * Throwable}'s {@linkplain Throwable#getCause() causal
+   * chain}&mdash;that is {@linkplain
+   * Throwables.Predicate#apply(Throwable) accepted by the supplied
+   * <tt>Predicate</tt>}
+   */
   public static final Throwable nthInstance(Throwable throwable, final Predicate predicate, int zeroBasedOccurrence) {
     zeroBasedOccurrence = Math.max(0, zeroBasedOccurrence);
     Throwable returnValue = null;
-    if (predicate != null) {
-      final List<Throwable> list = toList(throwable);
-      assert list != null;
-      // Note: do not use getCause(); the work has already been done
-      int numberOfOccurrences = 0;
-      for (int i = 0; i < list.size(); i++) {
-        final Throwable t = list.get(i);
-        if (t != null && predicate.apply(t) && zeroBasedOccurrence == numberOfOccurrences++) {
-          returnValue = t;
-          break;
-        }
+    final List<Throwable> list = toList(throwable);
+    assert list != null;
+    // Note: do not use getCause(); the work has already been done
+    int numberOfOccurrences = 0;
+    for (int i = 0; i < list.size(); i++) {
+      final Throwable t = list.get(i);
+      if (t != null && (predicate == null || predicate.apply(t)) && zeroBasedOccurrence == numberOfOccurrences++) {
+        returnValue = t;
+        break;
       }
     }
     return returnValue;
