@@ -38,7 +38,8 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
- * An {@link Exception} that is also holds a modifiable list of other
+ * An {@link Exception} (and an implementation of the {@link
+ * Collection} interface) that also holds a modifiable list of other
  * {@link Throwable}s that are not connected to the direct {@linkplain
  * Throwable#getCause() causal chain}, but are affiliated nonetheless.
  * Instances of this class are particularly useful when dealing with
@@ -50,7 +51,9 @@ import java.util.concurrent.CopyOnWriteArrayList;
  *
  * @author <a href="mailto:ljnelson@gmail.com">Laird Nelson</a>
  *
- * @since 1.0
+ * @since 1.0-SNAPSHOT
+ *
+ * @version 1.0-SNAPSHOT
  */
 public class ThrowableChain extends Exception implements Collection<Throwable> {
 
@@ -65,7 +68,8 @@ public class ThrowableChain extends Exception implements Collection<Throwable> {
   /**
    * The {@link List} containing additional {@link Throwable}s.  This
    * field is never {@code null} and never {@linkplain List#isEmpty()
-   * empty}.
+   * empty} and always contains this {@link ThrowableChain} itself as
+   * its first element.
    */
   private final CopyOnWriteArrayList<Throwable> list;
 
@@ -117,10 +121,10 @@ public class ThrowableChain extends Exception implements Collection<Throwable> {
    * Adds the supplied {@link Throwable} to this {@link
    * ThrowableChain} if it is non-{@code null} and not this {@link
    * ThrowableChain} (a {@link ThrowableChain} cannot add itself to
-   * itself), or initializes this {@link ThrowableChain}'s {@linkplain
-   * #getCause() cause} with the supplied {@link Throwable} if the
-   * cause has not yet been {@linkplain Throwable#initCause(Throwable)
-   * initialized}.
+   * itself, because it already contains itself), or initializes this
+   * {@link ThrowableChain}'s {@linkplain #getCause() cause} with the
+   * supplied {@link Throwable} if the cause has not yet been
+   * {@linkplain Throwable#initCause(Throwable) initialized}.
    *
    * <p>If this {@link ThrowableChain}'s {@linkplain #getCause()
    * cause} is {@code null}, then this {@link ThrowableChain}'s
@@ -131,7 +135,8 @@ public class ThrowableChain extends Exception implements Collection<Throwable> {
    *
    * <p>Under no circumstances are the supplied {@link Throwable}'s
    * {@linkplain Throwable#getCause() cause} or any transitive causes
-   * added.</p>
+   * added to this {@link ThrowableChain}'s {@linkplain
+   * #asList() list of affiliated <tt>Throwable</tt>s}.</p>
    *
    * <p>If the supplied {@link Throwable} is already contained in this
    * {@link ThrowableChain}'s {@linkplain #asList() list of affiliated

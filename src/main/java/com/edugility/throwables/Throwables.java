@@ -37,7 +37,9 @@ import java.util.List;
  *
  * @author <a href="mailto:ljnelson@gmail.com">Laird Nelson</a>
  *
- * @since 1.0
+ * @since 1.0-SNAPSHOT
+ *
+ * @version 1.0-SNAPSHOT
  */
 public final class Throwables {
 
@@ -92,7 +94,29 @@ public final class Throwables {
       return Collections.unmodifiableList(l);
     }
   }
-
+  
+  /**
+   * Creates and returns a view of the supplied {@link Throwable} and
+   * its {@linkplain Throwable#getCause() causal chain} as a {@link
+   * List}.
+   *
+   * <p>This method never returns {@code null}.</p>
+   *
+   * <p>This method mutates the supplied {@link List} when possible.
+   * If the supplied {@link List} is {@code null}, a new {@link List}
+   * is allocated.</p>
+   *
+   * @param throwable the {@link Throwable} in question; may be {@code
+   * null}
+   *
+   * @param l the {@link List} to return; may be {@code null} in which
+   * case a new {@link List} will be allocated
+   *
+   * @return a {@link List} of {@link Throwable}s; never {@code null};
+   * the return value will always contain the supplied {@link
+   * Throwable} as its first element unless the supplied {@link
+   * Throwable} is {@code null}
+   */
   private static final List<Throwable> toList(final Throwable throwable, List<Throwable> l) {
     final List<Throwable> returnValue;
     if (throwable == null) {
