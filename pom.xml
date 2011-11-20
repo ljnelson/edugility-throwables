@@ -216,10 +216,10 @@
     <mavenAssemblyPluginVersion>2.2.1</mavenAssemblyPluginVersion>
     <mavenCleanPluginVersion>2.4.1</mavenCleanPluginVersion>
     <mavenCompilerPluginVersion>2.3.2</mavenCompilerPluginVersion>
-    <mavenDependencyPluginVersion>2.2</mavenDependencyPluginVersion>
+    <mavenDependencyPluginVersion>2.3</mavenDependencyPluginVersion>
     <mavenEnforcerPluginVersion>1.0.1</mavenEnforcerPluginVersion>
     <mavenGpgPluginVersion>1.4</mavenGpgPluginVersion>
-    <mavenJarPluginVersion>2.3.1</mavenJarPluginVersion>
+    <mavenJarPluginVersion>2.3.2</mavenJarPluginVersion>
     <mavenJavadocPluginVersion>2.8</mavenJavadocPluginVersion>
     <mavenPluginPluginVersion>2.9</mavenPluginPluginVersion>
     <mavenProjectInfoReportsPlugin>2.4</mavenProjectInfoReportsPlugin>
@@ -231,7 +231,6 @@
     <mavenSitePluginVersion>3.0</mavenSitePluginVersion>
     <mavenSourcePluginVersion>2.1.2</mavenSourcePluginVersion>
     <mavenSurefirePluginVersion>2.10</mavenSurefirePluginVersion>
-    <mavenVersion>3.0.3</mavenVersion>
     <versionsMavenPluginVersion>1.2</versionsMavenPluginVersion>
 
     <!-- Other Properties -->
@@ -247,6 +246,9 @@
 
     <!-- maven-resources-plugin Properties -->
     <maven.resources.escapeString>\</maven.resources.escapeString>
+
+    <!-- maven-site-plugin Properties -->
+    <maven.site.deploy.skip>false</maven.site.deploy.skip>
 
     <!-- maven-javadoc-plugin Properties -->
     <detectLinks>false</detectLinks>
