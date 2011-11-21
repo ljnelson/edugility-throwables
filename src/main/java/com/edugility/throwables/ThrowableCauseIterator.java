@@ -37,6 +37,8 @@ import java.util.NoSuchElementException;
  * @author <a href="mailto:ljnelson@gmail.com">Laird Nelson</a>
  *
  * @since 1.0-SNAPSHOT
+ *
+ * @version 1.0-SNAPSHOT
  */
 public final class ThrowableCauseIterator implements Iterable<Throwable>, Iterator<Throwable> {
   

@@ -27,6 +27,8 @@
  */
 package com.edugility.throwables;
 
+import java.io.Serializable;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
@@ -305,8 +307,10 @@ public final class Throwables {
    * @author <a href="mailto:ljnelson@gmail.com">Laird Nelson</a>
    *
    * @since 1.0-SNAPSHOT
+   *
+   * @version 1.0-SNAPSHOT
    */
-  public static interface Predicate {
+  public static interface Predicate extends Serializable {
 
     /**
      * Evaluates the supplied {@link Throwable} for fitness and
@@ -329,8 +333,18 @@ public final class Throwables {
    * @author <a href="mailto:ljnelson@gmail.com">Laird Nelson</a>
    *
    * @since 1.0-SNAPSHOT
+   *
+   * @version 1.0-SNAPSHOT
    */
   private static final class InstanceOfPredicate implements Predicate {
+
+    /**
+     * The version number of the serialized representation of this
+     * class.
+     *
+     * @see java.io.Serializable
+     */
+    private static final long serialVersionUID = 1L;
 
     /**
      * The {@link Class} to use for the test.

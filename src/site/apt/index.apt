@@ -42,8 +42,9 @@ Throwables
 
   The
   {{{./apidocs/com/edugility/throwables/ThrowableChain.html}<<<ThrowableChain>>>}}
-  class makes it easier to deal with <<<Throwable>>>s when working
-  with <<<finally>>> blocks.
+  class makes it easier to deal with
+  {{{http://download.oracle.com/javase/6/docs/api/java/lang/Throwable.html}<<<Throwable>>>}}s
+  when working with <<<finally>>> blocks.
 
 *
   {{{./apidocs/com/edugility/throwables/Throwables.html}<<<Throwables>>>}}
@@ -53,3 +54,34 @@ Throwables
   class provides useful utility methods for working with a
   {{{http://download.oracle.com/javase/6/docs/api/java/lang/Throwable.html}<<<Throwable>>>}}'s
   causal chain.
+
+Installation/Usage
+
+  Place the following dependency information in your <<<pom.xml>>>:
+
+---
+<dependency>
+  <groupId>com.edugility</groupId>
+  <artifactId>edugility-throwables</artifactId>
+  <version>1.0</version>
+</dependency>
+---
+
+  You will also need to make sure that the <<<oss.sonatype.org>>>
+  {{{http://nexus.sonatype.org/oss-repository-hosting.html}Nexus
+  repository}} is in your <<<settings.xml>>>:
+
+---
+<repository>
+  <id>sonatype-public</id>
+  <name>Sonatype Public Repository Group</name>
+  <url>https://oss.sonatype.org/content/groups/public/</url>
+  <layout>default</layout>
+  <releases>
+    <enabled>true</enabled>
+  </releases>
+  <snapshots>
+    <enabled>true</enabled>
+  </snapshots>
+</repository>
+---
