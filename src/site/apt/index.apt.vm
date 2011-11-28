@@ -63,7 +63,7 @@ Installation/Usage
 <dependency>
   <groupId>com.edugility</groupId>
   <artifactId>edugility-throwables</artifactId>
-  <version>1.0</version>
+  <version>${projectVersion}</version>
 </dependency>
 ---
 

@@ -33,8 +33,6 @@
  * java.lang.Throwable}s.
  *
  * @author <a href="mailto:ljnelson@gmail.com">Laird Nelson</a>
- * 
- * @version 1.0-SNAPSHOT
  *
  * @since 1.0-SNAPSHOT
  */

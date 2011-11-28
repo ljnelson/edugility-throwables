@@ -52,8 +52,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
  * @author <a href="mailto:ljnelson@gmail.com">Laird Nelson</a>
  *
  * @since 1.0-SNAPSHOT
- *
- * @version 1.0-SNAPSHOT
  */
 public class ThrowableChain extends Exception implements Collection<Throwable> {
 

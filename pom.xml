@@ -236,6 +236,7 @@
     <!-- Other Properties -->
     <loggingConfigFile>${basedir}/logging.properties</loggingConfigFile>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <projectVersion>${project.version}</projectVersion>
 
     <!-- maven-compiler-plugin Properties -->
     <maven.compiler.showDeprecation>true</maven.compiler.showDeprecation>

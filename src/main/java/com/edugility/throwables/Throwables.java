@@ -40,8 +40,6 @@ import java.util.List;
  * @author <a href="mailto:ljnelson@gmail.com">Laird Nelson</a>
  *
  * @since 1.0-SNAPSHOT
- *
- * @version 1.0-SNAPSHOT
  */
 public final class Throwables {
 
@@ -307,8 +305,6 @@ public final class Throwables {
    * @author <a href="mailto:ljnelson@gmail.com">Laird Nelson</a>
    *
    * @since 1.0-SNAPSHOT
-   *
-   * @version 1.0-SNAPSHOT
    */
   public static interface Predicate extends Serializable {
 
@@ -333,8 +329,6 @@ public final class Throwables {
    * @author <a href="mailto:ljnelson@gmail.com">Laird Nelson</a>
    *
    * @since 1.0-SNAPSHOT
-   *
-   * @version 1.0-SNAPSHOT
    */
   private static final class InstanceOfPredicate implements Predicate {
 
