@@ -32,28 +32,53 @@ import java.io.IOException;
 
 import java.sql.SQLException;
 
-import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 
 import javax.naming.NamingException;
 
-import com.edugility.throwables.Throwables.Predicate;
-
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
 import static org.junit.Assert.*;
 
+/**
+ * A test case that exercises the {@link ThrowablePattern} and {@link
+ * ThrowableMatcher} classes.
+ *
+ * @author <a href="mailto:ljnelson@gmail.com">Laird Nelson</a>
+ *
+ * @since 1.2-SNAPSHOT
+ *
+ * @see {@link ThrowableMatcher}
+ *
+ * @see {@link ThrowablePattern}
+ */
 public class TestCaseThrowablePattern {
 
-  private ThrowablePattern pattern;
+  /**
+   * The {@link ThrowablePattern} being tested.  This field is
+   * automatically initialized by <a
+   * href="http://www.junit.org/">JUnit</a> when any of the methods
+   * annotated with {@code @}{@link Test} in this class is called by
+   * the JUnit framework.
+   *
+   * @see #setUp()
+   */
+  protected ThrowablePattern pattern;
 
+  /**
+   * Creates a new {@link TestCaseThrowablePattern}.
+   */
   public TestCaseThrowablePattern() {
     super();
   }
 
+  /**
+   * Creates a new {@link ThrowablePattern} and initializes it for
+   * testing.
+   *
+   * @exception Exception if an error occurs
+   */
   @Before
   public void setUp() throws Exception {
     this.pattern = new ThrowablePattern();
@@ -118,7 +143,7 @@ public class TestCaseThrowablePattern {
 
   @Test
   public void testEdgeCase1() throws Exception {
-    final String s = "java.sql.SQLException/java.lang.IllegalStateException";
+    final String s = "java.sql.SQLException /  java.lang.IllegalStateException";
     final ThrowableMatcher p = this.pattern.newThrowableMatcher(s);
     assertNotNull(p);
     final IllegalStateException ise = new IllegalStateException();
@@ -127,7 +152,7 @@ public class TestCaseThrowablePattern {
   }
 
   @Test
-  public void testEdgeGlob() throws Exception {
+  public void testGlobWithWhitespace() throws Exception {
     final String s = "java.lang.NullPointerException/   * /javax.naming.NamingException";
     final ThrowableMatcher p = this.pattern.newThrowableMatcher(s);
     assertNotNull(p);
