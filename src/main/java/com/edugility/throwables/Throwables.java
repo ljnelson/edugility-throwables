@@ -146,6 +146,14 @@ public final class Throwables {
             found = found || t == throwable;
             l.add(t);
 
+            // XXX TODO FIXME: I don't like this.  If a Throwable is
+            // encountered that implements Iterable<Throwable> (like
+            // SQLException) then it should be presumed that the
+            // Throwable is in charge of its own iteration.
+            //
+            // Right now, this method does a recursive call to ALSO
+            // walk the causal chain.
+
             final Throwable cause = t.getCause();
             if (cause != null) {
               assert cause != t; // shouldn't be possible according to Throwable contract

@@ -64,6 +64,11 @@
         <version>${junitVersion}</version>
         <scope>test</scope>
       </dependency>
+      <dependency>
+        <groupId>org.mvel</groupId>
+        <artifactId>mvel2</artifactId>
+        <version>${mvelVersion}</version>
+      </dependency>
     </dependencies>
   </dependencyManagement>
 
@@ -71,6 +76,10 @@
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.mvel</groupId>
+      <artifactId>mvel2</artifactId>
     </dependency>
   </dependencies>
 
@@ -199,7 +208,18 @@
         <filtering>true</filtering>
       </resource>
     </resources>
-
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>2.3.2</version>
+        <configuration>
+          <source>1.6</source>
+          <target>1.6</target>
+          <showDeprecation>true</showDeprecation>
+        </configuration>
+      </plugin>
+    </plugins>
     <testResources>
       <testResource>
         <directory>${basedir}/src/test/resources</directory>
@@ -231,6 +251,7 @@
     <mavenSitePluginVersion>3.0</mavenSitePluginVersion>
     <mavenSourcePluginVersion>2.1.2</mavenSourcePluginVersion>
     <mavenSurefirePluginVersion>2.10</mavenSurefirePluginVersion>
+    <mvelVersion>2.0.19</mvelVersion>
     <versionsMavenPluginVersion>1.2</versionsMavenPluginVersion>
 
     <!-- Other Properties -->

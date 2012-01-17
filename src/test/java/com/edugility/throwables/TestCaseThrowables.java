@@ -83,6 +83,7 @@ public class TestCaseThrowables {
     List<Throwable> list = Throwables.toList(null);
     assertNotNull(list);
     assertTrue(list.isEmpty());
+
     list = Throwables.toList(this.first);
     assertNotNull(list);
     assertEquals(4, list.size());
@@ -95,29 +96,55 @@ public class TestCaseThrowables {
   @Test
   public void testToListWithThrowableChain() {
     final ThrowableChain chain = new ThrowableChain();
+
+    // A ThrowableChain always contains itself.
     assertEquals(1, chain.size());
+
+    // Setting the cause does nothing to the list of affiliates or a
+    // ThrowableChain's size.
     final Exception cause = new Exception("cause");
-    final Exception firstAffiliate = new Exception("firstAffiliate");
     chain.add(cause); // actually initializes cause, does not add to list
     assertEquals(1, chain.size());
     assertSame(cause, chain.getCause());
+
+    // Adding an affiliate to a ThrowableChain with a cause results in
+    // size 2, not 3.
+    final Exception firstAffiliate = new Exception("firstAffiliate");
     chain.add(firstAffiliate);
     assertEquals(2, chain.size());
+
+    // But asking Throwables#toList() to do its thing WILL produce a
+    // list of size 3, since causes ARE considered.
     final List<Throwable> list = Throwables.toList(chain);
     assertNotNull(list);
     assertEquals(3, list.size());
+
+    // A ThrowableChain is always the first element in the list that
+    // results from Throwables#toList() when it is passed to it.
     assertSame(chain, list.get(0));
+    
+    // Causes are next (depth first).
     assertSame(cause, list.get(1));
+
+    // After one list element's causal chain is iterated, then the
+    // next one is iterated.
     assertSame(firstAffiliate, list.get(2));
   }
 
   @Test
   public void testWeird() {
-    // TODO: test a throwable that is an Iterable<Throwable> that does
-    // not contain itself
-    final List<Throwable> list = Throwables.toList(new ThrowableCollection());
+    // Tests a throwable that is an Iterable<Throwable> that does NOT
+    // contain itself
+    final ThrowableCollection c = new ThrowableCollection();
+    final Iterator<Throwable> i = c.iterator();
+    assertNotNull(i);
+    assertTrue(i.hasNext());
+    assertFalse(c == i.next());
+
+    final List<Throwable> list = Throwables.toList(c);
     assertNotNull(list);
     assertEquals(3, list.size());
+    assertSame(c, list.get(0));
   }
 
   private static final class ThrowableCollection extends Throwable implements Iterable<Throwable> {

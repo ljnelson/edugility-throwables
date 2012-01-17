@@ -1,6 +1,6 @@
 /* -*- mode: Java; c-basic-offset: 2; indent-tabs-mode: nil -*-
  *
- * Copyright (c) 2011-2012 Edugility LLC.
+ * Copyright (c) 2012-2012 Edugility LLC.
  *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
@@ -25,13 +25,26 @@
  * The original copy of this license is available at
  * http://www.opensource.org/license/mit-license.html.
  */
-
-/**
- * Provides classes and interfaces useful for working with {@link
- * java.lang.Throwable}s.
- *
- * @author <a href="mailto:ljnelson@gmail.com">Laird Nelson</a>
- *
- * @since 1.0-SNAPSHOT
- */
 package com.edugility.throwables;
+
+public class ThrowableMatcherException extends Exception {
+
+  private static final long serialVersionUID = 1L;
+
+  public ThrowableMatcherException() {
+    super();
+  }
+
+  public ThrowableMatcherException(final String message) {
+    super(message);
+  }
+
+  public ThrowableMatcherException(final Throwable cause) {
+    super(cause);
+  }
+
+  public ThrowableMatcherException(final String message, final Throwable cause) {
+    super(message, cause);
+  }
+
+}
