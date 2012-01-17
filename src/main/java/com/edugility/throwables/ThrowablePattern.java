@@ -29,20 +29,35 @@
  */
 package com.edugility.throwables;
 
-import java.io.StringReader;
 import java.io.IOException;
+import java.io.Reader;
 import java.io.Serializable;
+import java.io.StringReader;
+
+import java.nio.CharBuffer;
+
+import java.sql.SQLException; // for javadoc only
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-
-import com.edugility.throwables.Throwables.Predicate;
 
 import org.mvel2.MVEL;
 
-public class ThrowablePattern {
+/**
+ * A pattern that can match {@link Throwable} instances.
+ *
+ * @author <a href="mailto:ljnelson@gmail.com">Laird Nelson</a>
+ *
+ * @see ThrowableMatcher
+ *
+ * @see #newThrowableMatcher(String)
+ *
+ * @since 1.2-SNAPSHOT
+ */
+public class ThrowablePattern implements Serializable {
 
+  private static final long serialVersionUID = 1L;
+  
   private static final String LS = System.getProperty("line.separator", "\n");
 
   private enum State {
@@ -58,26 +73,25 @@ public class ThrowablePattern {
     PROPERTY_BLOCK
   }
 
-  private final StringBuilder classNameBuffer;
-
-  private final StringBuilder commentBuffer;
-
-  private final StringBuilder propertyBlockBuffer;
-
-  private boolean greedyGlob;
-
-  private int depthLevel;
-
-  private final ConjunctiveThrowableMatcher matchers;
-
+  /**
+   * Creates a new {@link ThrowablePattern}.
+   */
   public ThrowablePattern() {
     super();
-    this.classNameBuffer = new StringBuilder();
-    this.commentBuffer = new StringBuilder();
-    this.propertyBlockBuffer = new StringBuilder();
-    this.matchers = new ConjunctiveThrowableMatcher();
   }
 
+  /**
+   * Loads the {@link Class} named by the supplied classname.  This
+   * implementation first attempts to use the {@linkplain
+   * Thread#getContextClassLoader() context <tt>ClassLoader</tt>}, and
+   * then uses the {@link ClassLoader} returned by {@link
+   * Class#getClassLoader() Throwable.class.getClassLoader()}.
+   *
+   * @return the loaded {@link Class}; never {@code null}
+   *
+   * @exception ClassNotFoundException if the {@link Class} could not
+   * be loaded
+   */
   protected Class<? extends Throwable> loadClass(final String name) throws ClassNotFoundException {
     Class<?> c = null;
     ClassLoader loader = Thread.currentThread().getContextClassLoader();
@@ -92,180 +106,217 @@ public class ThrowablePattern {
     return returnValue;
   }
 
-  private final void newElementMatcher(final ThrowableMatcher delegate) {
-    final ThrowableListElementThrowableMatcher matcher = new ThrowableListElementThrowableMatcher(this.depthLevel, delegate);
-    this.matchers.add(matcher);
+  private static final void newElementMatcher(final ParsingState parsingState, final ThrowableMatcher delegate) {
+    parsingState.matchers.add(new ThrowableListElementThrowableMatcher(parsingState.depthLevel, delegate));
   }
 
-  @SuppressWarnings("unchecked")
-  private void subclassTest() throws ClassNotFoundException {
-    newElementMatcher(new InstanceOfThrowableMatcher(this.loadClass(this.classNameBuffer.toString())));
+  private final void subclassTest(final ParsingState parsingState) throws ClassNotFoundException {
+    newElementMatcher(parsingState, new InstanceOfThrowableMatcher(this.loadClass(parsingState.classNameBuffer.toString())));
   }
 
-  private void classNameMatchTest() {
-    newElementMatcher(new ClassNameEqualityThrowableMatcher(this.classNameBuffer.toString()));
+  private static final void classNameMatchTest(final ParsingState parsingState) {
+    newElementMatcher(parsingState, new ClassNameEqualityThrowableMatcher(parsingState.classNameBuffer.toString()));
   }
 
-  private void ellipsis() {
+  private static final void ellipsis(final ParsingState parsingState) {
+
+  }
+
+  private static final void identifierStart(final ParsingState parsingState) {    
+    parsingState.classNameBuffer.setLength(0);
+  }
+
+  private static final void identifierEnd(final ParsingState parsingState) {
     
   }
 
-  private void identifierStart() {    
-    this.classNameBuffer.setLength(0);
+  private static final void slash(final ParsingState parsingState) {
+    slash(parsingState, true);
   }
 
-  private void identifierEnd() {
-    
-  }
-
-  private void slash() {
-    this.slash(true);
-  }
-
-  private void slash(final boolean adjustDepth) {
+  private static final void slash(final ParsingState parsingState, final boolean adjustDepth) {
     if (adjustDepth) {
-      if (this.greedyGlob) {
-        this.depthLevel--;
+      if (parsingState.greedyGlob) {
+        parsingState.depthLevel--;
       } else {
-        this.depthLevel++;
+        parsingState.depthLevel++;
       }
     }
   }
 
-  private void identifier(final int c) {    
-    this.classNameBuffer.append((char)c);
+  private static final void identifier(final ParsingState parsingState, final int c) {    
+    parsingState.classNameBuffer.append((char)c);
   }
 
-  private void identifier(final String s) {
-    this.classNameBuffer.append(s);
+  private static final void identifier(final ParsingState parsingState, final String s) {
+    parsingState.classNameBuffer.append(s);
   }
 
-  private void glob() {
-    this.identifierStart();
-    this.identifier("java.lang.Throwable");
+  private static final void glob(final ParsingState parsingState) {
+    identifierStart(parsingState);
+    identifier(parsingState, "java.lang.Throwable");
   }
 
-  private void greedyGlob() {
-    this.greedyGlob = true;
-    this.depthLevel = 0;
+  private static final void greedyGlob(final ParsingState parsingState) {
+    parsingState.greedyGlob = true;
+    parsingState.depthLevel = 0;
   }
 
-  private void commentStart() {
-    this.commentBuffer.setLength(0);
+  private static final void commentStart(final ParsingState parsingState) {
+    parsingState.commentBuffer.setLength(0);
   }
 
-  private void comment(final int c) {    
-    this.commentBuffer.append((char)c);
+  private static final void comment(final ParsingState parsingState, final int c) {
+    parsingState.commentBuffer.append((char)c);
   }
 
-  private void commentEnd() {
+  private static final void commentEnd(final ParsingState parsingState) {
 
   }
 
-  private void propertyBlockStart() {
-    this.propertyBlockBuffer.setLength(0);
+  private static final void propertyBlockStart(final ParsingState parsingState) {
+    parsingState.propertyBlockBuffer.setLength(0);
   }
 
-  private void propertyBlock(final int c) {    
-    this.propertyBlockBuffer.append((char)c);
+  private static final void propertyBlock(final ParsingState parsingState, final int c) {    
+    parsingState.propertyBlockBuffer.append((char)c);
   }
 
-  private void propertyBlockEnd() {
-    // TODO: investigate how to do this in the presence of a greedyGlob
-    //final ThrowableMatcher matcher = new PropertyBlockThrowableMatcher(this.propertyBlockBuffer.toString());
-    newElementMatcher(new PropertyBlockThrowableMatcher(this.propertyBlockBuffer.toString()));
-    // this.matchers.add(matcher);
+  private static final void propertyBlockEnd(final ParsingState parsingState) {
+    newElementMatcher(parsingState, new PropertyBlockThrowableMatcher(parsingState.propertyBlockBuffer.toString()));
   }
 
-  private void start() {
-    this.depthLevel = 0;
-    this.greedyGlob = false;
-    this.clearBuffers();
-    this.matchers.clear();
-  }
-
-  private final void clearBuffers() {
-    this.propertyBlockBuffer.setLength(0);
-    this.classNameBuffer.setLength(0);
-    this.commentBuffer.setLength(0);
+  private static final void start(final ParsingState parsingState) {
+    parsingState.state = State.START;
+    parsingState.priorState = null;
+    parsingState.periodCount = 0;
+    parsingState.depthLevel = 0;
+    parsingState.greedyGlob = false;
+    parsingState.propertyBlockBuffer.setLength(0);
+    parsingState.classNameBuffer.setLength(0);
+    parsingState.commentBuffer.setLength(0);
   }
 
   /**
    * Compiles the supplied pattern into a new {@link
    * ThrowableMatcher}.  This method never returns {@code null}.
+   *
+   * <p>The supplied pattern must conform to the following (currently
+   * informal) grammar:</p>
    * 
    * <pre>
    *
-   * Pattern = PatternStart ('/' PatternBody)?
+   * Pattern = PatternStart '<b>/</b>' PatternBody
    *
-   * PatternStart = '/'? ( GreedyGlob | ClassTest )
+   * PatternStart = '<b>/</b>'? ( GreedyGlob | ClassTest )
+   *
+   * GreedyGlob = '<b>**</b>'
    * 
-   * PatternBody = ClassTest ( '/' ( GreedyGlob | ClassTest ) )*
+   * PatternBody = ClassTest ( '<b>/</b>' ( GreedyGlob | ClassTest ) )*
    *
-   * ClassTest = ClassName Ellipsis? PropertyBlock?
+   * ClassTest = ( ClassName Ellipsis? PropertyBlock? ) | Glob
    *
-   * PropertyBlock = '(' <i>MVEL expression</i> ')'
+   * Glob = '<b>*</b>'
    *
-   * Ellipsis = \u2026 | ...
+   * PropertyBlock = '<b>(</b>' <i><a href="http://mvel.codehaus.org/">MVEL</a> expression</i> '<b>)</b>'
    *
-   * ClassName = Fully qualified Java class name
+   * Ellipsis = '<b>\u2026</b>' | '<b>...</b>'
+   *
+   * ClassName = <i>Fully qualified Java class name</i>
    *
    * </pre>
+   *
+   * <p><strong>Note:</strong> currently there is support for only one
+   * occurrence of <tt>**</tt>.</p>
+   *
+   * <h3>Common and Hopefully Useful Examples</h3>
+   *
+   * <p>All of the following examples work on a <i>{@link Throwable}
+   * chain</i>, which is defined for these purposes as a {@link
+   * Throwable} whose {@linkplain Throwable#getCause() cause} either
+   * is {@code null} or references another {@link Throwable} that is
+   * not the same as the {@link Throwable} whose cause it is.</p>
+   *
+   * <dl>
+   *
+   * <dt><tt>javax.ejb.EJBException.../javax.persistence.PersistenceException.../**&#47;java.sql.SQLException...</tt></dt>
+   *
+   * <dd>Matches a {@link Throwable} chain that begins with a
+   * <tt>javax.ejb.EJBException</tt> instance, followed immediately by
+   * a <tt>javax.persistence.PersistenceException</tt>, followed by
+   * zero or more {@link Throwable} instances and terminated with an
+   * instance of {@link SQLException}.  The ellipsis ("<tt>...</tt>"
+   * or "<tt>\u2026</tt>") indicates "any instance"; a simple
+   * classname without a trailing ellipsis means that the candidate
+   * {@link Throwable}'s {@linkplain Class#getName() class name} must
+   * match exactly.</dd>
+   *
+   * <dt><tt>**&#47;com.foobar.FoobarException...</tt></dt>
+   *
+   * <dd>Matches any {@link Throwable} chain whose root cause is an
+   * instance of <tt>com.foobar.FoobarException</tt>.</dd>
+   *
+   * </dl>
+   *
+   * @param pattern the pattern to parse; must not be {@code null}
+   *
+   * @exception IllegalArgumentException if {@code pattern} is {@code
+   * null}
+   *
+   * @exception ClassNotFoundException if the supplied {@code pattern}
+   * contains a segment that will result in the attempted loading of a
+   * {@link Class}, and if that class loading operation fails
+   * 
+   * @exception IOException if {@linkplain StringReader#read()
+   * reading of the supplied <tt>String</tt>} fails for some obscure
+   * reason
    */
   public ThrowableMatcher newThrowableMatcher(final String pattern) throws ClassNotFoundException, IOException {
     if (pattern == null) {
       throw new IllegalArgumentException("pattern", new NullPointerException("pattern == null"));
     }
 
-    final StringReader reader = new StringReader(pattern);
+    final ParsingState parsingState = new ParsingState(pattern);
+    for (parsingState.position = 0; parsingState.read() != -1; parsingState.position++) {
+      final State originalState = parsingState.state;
 
-    State state = State.START;
-
-    State priorState = null;
-
-    int periodCount = 0;
-    int c;
-    for (int pos = 0; (c = reader.read()) != -1; pos++) {
-      final State originalState = state;
-
-      switch (state) {
-
+      switch (parsingState.state) {
 
         // START
       case START:
         
-        if (Character.isWhitespace(c)) {
+        if (Character.isWhitespace(parsingState.character)) {
           // Eat whitespace
           break;
         }
 
-        switch (c) {
+        switch (parsingState.character) {
 
         case '/':
-          start();
-          slash(false);
-          state = State.NORMAL;
+          start(parsingState);
+          slash(parsingState, false);
+          parsingState.state = State.NORMAL;
           break;
 
         case '#':
-          start();
-          state = State.COMMENT;
-          commentStart();
+          start(parsingState);
+          parsingState.state = State.COMMENT;
+          commentStart(parsingState);
           break;
 
         case '*':
-          start();
-          state = State.INDETERMINATE_GLOB;
+          start(parsingState);
+          parsingState.state = State.INDETERMINATE_GLOB;
           break;
 
         default:
-          start();
-          if (!Character.isJavaIdentifierStart(c)) {
-            throw new IllegalStateException(buildIllegalStateExceptionMessage(pattern, pos, state));
+          start(parsingState);
+          if (!Character.isJavaIdentifierStart(parsingState.character)) {
+            throw new IllegalStateException(buildIllegalStateExceptionMessage(parsingState));
           }
-          state = State.IDENTIFIER;
-          identifierStart();
-          identifier((char)c);
+          parsingState.state = State.IDENTIFIER;
+          identifierStart(parsingState);
+          identifier(parsingState, (char)parsingState.character);
         }
         break;
         // end START
@@ -274,33 +325,33 @@ public class ThrowablePattern {
         // NORMAL
       case NORMAL:
 
-        if (Character.isWhitespace(c)) {
+        if (Character.isWhitespace(parsingState.character)) {
           // Eat whitespace
           break;
         }
 
-        switch (c) {
+        switch (parsingState.character) {
 
         case '#':
-          state = State.COMMENT;
-          commentStart();
+          parsingState.state = State.COMMENT;
+          commentStart(parsingState);
           break;
 
         case '*':
-          state = State.INDETERMINATE_GLOB;
+          parsingState.state = State.INDETERMINATE_GLOB;
           break;
 
         case '/':
-          slash();
+          slash(parsingState);
           break;
 
         default:
-          if (!Character.isJavaIdentifierStart(c)) {
-            throw new IllegalStateException(buildIllegalStateExceptionMessage(pattern, pos, state));
+          if (!Character.isJavaIdentifierStart(parsingState.character)) {
+            throw new IllegalStateException(buildIllegalStateExceptionMessage(parsingState));
           }
-          state = State.IDENTIFIER;
-          identifierStart();
-          identifier((char)c);
+          parsingState.state = State.IDENTIFIER;
+          identifierStart(parsingState);
+          identifier(parsingState, (char)parsingState.character);
         }
         break;
         // end NORMAL
@@ -308,16 +359,16 @@ public class ThrowablePattern {
 
         // COMMENT
       case COMMENT:
-        switch (c) {
+        switch (parsingState.character) {
 
         case '\r':
         case '\n':
-          commentEnd();
-          state = State.NORMAL;
+          commentEnd(parsingState);
+          parsingState.state = State.NORMAL;
           break;
 
         default:
-          comment(c);
+          comment(parsingState, parsingState.character);
 
         }
         break;
@@ -326,34 +377,34 @@ public class ThrowablePattern {
 
         // INDETERMINATE_PERIOD
       case INDETERMINATE_PERIOD:
-        assert priorState == State.IDENTIFIER || priorState == State.INDETERMINATE_PERIOD : "Prior state was not " + State.IDENTIFIER + " and was not " + State.INDETERMINATE_PERIOD + ": " + priorState;
-        switch (c) {
+        assert parsingState.priorState == State.IDENTIFIER || parsingState.priorState == State.INDETERMINATE_PERIOD : "Prior state was not " + State.IDENTIFIER + " and was not " + State.INDETERMINATE_PERIOD + ": " + parsingState.priorState;
+        switch (parsingState.character) {
 
         case '.':
-          periodCount++;
-          assert periodCount > 0 : "periodCount <= 0: " + periodCount;
-          assert periodCount <= 3 : "periodCount > 3: " + periodCount;
-          if (periodCount == 3) {
-            periodCount = 0;
+          parsingState.periodCount++;
+          assert parsingState.periodCount > 0 : "parsingState.periodCount <= 0: " + parsingState.periodCount;
+          assert parsingState.periodCount <= 3 : "parsingState.periodCount > 3: " + parsingState.periodCount;
+          if (parsingState.periodCount == 3) {
+            parsingState.periodCount = 0;
             // Our current state is INDETERMINATE_PERIOD, but now we
             // know we just ran into an ellipsis.  That means our
             // prior prior prior state was IDENTIFIER.  That means we
             // just ended an identifier.
-            identifierEnd();
-            state = State.ELLIPSIS;
-            ellipsis();
-            subclassTest();
+            identifierEnd(parsingState);
+            parsingState.state = State.ELLIPSIS;
+            ellipsis(parsingState);
+            subclassTest(parsingState);
           }
           break;
 
         default:
-          periodCount = 0;
-          if (Character.isJavaIdentifierStart(c)) { // yes, start, not part: each portion of a package name is an Identifier, so must begin with an IdentifierStart.
-            state = State.IDENTIFIER;
-            identifier('.');
-            identifier(c);
+          parsingState.periodCount = 0;
+          if (Character.isJavaIdentifierStart(parsingState.character)) { // yes, start, not part: each portion of a package name is an Identifier, so must begin with an IdentifierStart.
+            parsingState.state = State.IDENTIFIER;
+            identifier(parsingState, '.');
+            identifier(parsingState, parsingState.character);
           } else {
-            throw new IllegalStateException(buildIllegalStateExceptionMessage(pattern, pos, state));
+            throw new IllegalStateException(buildIllegalStateExceptionMessage(parsingState));
           }
         }
         break;
@@ -362,27 +413,27 @@ public class ThrowablePattern {
 
         // INDETERMINATE_GLOB
       case INDETERMINATE_GLOB:
-        if (Character.isWhitespace(c) || c == '/') {
-          state = State.GLOB;
-          glob();
-          subclassTest();
-          state = State.NORMAL;
+        if (Character.isWhitespace(parsingState.character) || parsingState.character == '/') {
+          parsingState.state = State.GLOB;
+          glob(parsingState);
+          subclassTest(parsingState);
+          parsingState.state = State.NORMAL;
           break;
         }
-        switch (c) {
+        switch (parsingState.character) {
 
         case '*':
-          if (this.greedyGlob) {
+          if (parsingState.greedyGlob) {
             // we already found one! This is illegal.
-            throw new IllegalStateException(buildIllegalStateExceptionMessage(pattern, pos, state));
+            throw new IllegalStateException(buildIllegalStateExceptionMessage(parsingState));
           } else {
-            state = State.GREEDY_GLOB;
-            greedyGlob();
+            parsingState.state = State.GREEDY_GLOB;
+            greedyGlob(parsingState);
           }
           break;
 
         default:
-          throw new IllegalStateException(buildIllegalStateExceptionMessage(pattern, pos, state));
+          throw new IllegalStateException(buildIllegalStateExceptionMessage(parsingState));
         }
         break;
         // end INDETERMINATE_GLOB
@@ -390,19 +441,19 @@ public class ThrowablePattern {
 
         // GREEDY_GLOB
       case GREEDY_GLOB:
-        if (Character.isWhitespace(c)) {
+        if (Character.isWhitespace(parsingState.character)) {
           // Eat whitespace
           break;
         }
-        switch (c) {
+        switch (parsingState.character) {
 
         case '/':
-          slash();
-          state = State.NORMAL;
+          slash(parsingState);
+          parsingState.state = State.NORMAL;
           break;
 
         default:
-          throw new IllegalStateException(buildIllegalStateExceptionMessage(pattern, pos, state));
+          throw new IllegalStateException(buildIllegalStateExceptionMessage(parsingState));
         }
         break;
         // end GREEDY GLOB
@@ -411,47 +462,47 @@ public class ThrowablePattern {
         // IDENTIFIER
       case IDENTIFIER:
         
-        if (Character.isWhitespace(c)) {
+        if (Character.isWhitespace(parsingState.character)) {
           // End the identifier, eat the whitespace, and reset the state
-          identifierEnd();
-          classNameMatchTest();
-          state = State.NORMAL;
+          identifierEnd(parsingState);
+          classNameMatchTest(parsingState);
+          parsingState.state = State.NORMAL;
           break;
         }
 
-        switch (c) {
+        switch (parsingState.character) {
 
         case '.':
-          periodCount++;
-          state = State.INDETERMINATE_PERIOD;
+          parsingState.periodCount++;
+          parsingState.state = State.INDETERMINATE_PERIOD;
           break;
 
         case '\u2026':
-          identifierEnd();
-          state = State.ELLIPSIS;
-          ellipsis();
-          subclassTest();
+          identifierEnd(parsingState);
+          parsingState.state = State.ELLIPSIS;
+          ellipsis(parsingState);
+          subclassTest(parsingState);
           break;
 
         case '/':
-          identifierEnd();
-          classNameMatchTest();
-          slash();
-          state = State.NORMAL;
+          identifierEnd(parsingState);
+          classNameMatchTest(parsingState);
+          slash(parsingState);
+          parsingState.state = State.NORMAL;
           break;
 
         case '(':
-          identifierEnd();
-          classNameMatchTest();
-          state = State.PROPERTY_BLOCK;
-          propertyBlockStart();
+          identifierEnd(parsingState);
+          classNameMatchTest(parsingState);
+          parsingState.state = State.PROPERTY_BLOCK;
+          propertyBlockStart(parsingState);
           break;
 
         default:
-          if (!Character.isJavaIdentifierPart(c)) {
-            throw new IllegalStateException(buildIllegalStateExceptionMessage(pattern, pos, state));
+          if (!Character.isJavaIdentifierPart(parsingState.character)) {
+            throw new IllegalStateException(buildIllegalStateExceptionMessage(parsingState));
           }
-          identifier(c);
+          identifier(parsingState, parsingState.character);
         }
         break;
         // end IDENTIFIER
@@ -459,28 +510,28 @@ public class ThrowablePattern {
 
         // ELLIPSIS
       case ELLIPSIS:
-        if (Character.isWhitespace(c)) {
+        if (Character.isWhitespace(parsingState.character)) {
           // Eat whitespace
           break;
         }
-        switch (c) {
+        switch (parsingState.character) {
         case '/':
-          slash();
-          state = State.NORMAL;
+          slash(parsingState);
+          parsingState.state = State.NORMAL;
           break;
 
         case '(':
-          state = State.PROPERTY_BLOCK;
-          propertyBlockStart();
+          parsingState.state = State.PROPERTY_BLOCK;
+          propertyBlockStart(parsingState);
           break;
 
         case '#':
-          state = State.COMMENT;          
-          commentStart();
+          parsingState.state = State.COMMENT;
+          commentStart(parsingState);
           break;          
 
         default:
-          state = State.NORMAL;
+          parsingState.state = State.NORMAL;
         }
         break;
         // end ELLIPSIS
@@ -488,52 +539,53 @@ public class ThrowablePattern {
 
         // PROPERTY_BLOCK
       case PROPERTY_BLOCK:
-        switch (c) {
+        switch (parsingState.character) {
 
         case ')':
-          propertyBlockEnd();
-          state = State.NORMAL;
+          propertyBlockEnd(parsingState);
+          parsingState.state = State.NORMAL;
           break;
 
         default:
-          propertyBlock(c);
+          propertyBlock(parsingState, parsingState.character);
         }
         break;
         // end PROPERTY_BLOCK
 
 
       default:
-        throw new IllegalStateException(buildIllegalStateExceptionMessage(pattern, pos, state));
+        throw new IllegalStateException(buildIllegalStateExceptionMessage(parsingState));
       }
 
-      priorState = originalState;
+      parsingState.priorState = originalState;
     }
 
-    switch (priorState) {
-    case PROPERTY_BLOCK:
-      // propertyBlockEnd(); // this has been taken care of already
-      break;
+    switch (parsingState.priorState) {
     case COMMENT:
-      commentEnd();
+      commentEnd(parsingState);
       break;
     case IDENTIFIER:
-      identifierEnd();
-      classNameMatchTest();
+      identifierEnd(parsingState);
+      classNameMatchTest(parsingState);
       break;
     case INDETERMINATE_PERIOD:
-      if (periodCount == 0) {
-        // everything is AOK
-      } else {
-        throw new IllegalStateException(buildIllegalStateExceptionMessage(pattern, pattern.length() - 1, priorState));
+      if (parsingState.periodCount != 0) {
+        throw new IllegalStateException(buildIllegalStateExceptionMessage(pattern, pattern.length() - 1, parsingState.priorState));
       }
       break;
+    case PROPERTY_BLOCK:
+      break;
     case NORMAL:
-      break;      
+      break;
     default:
-      throw new IllegalStateException(buildIllegalStateExceptionMessage(pattern, pattern.length() - 1, priorState));
+      throw new IllegalStateException(buildIllegalStateExceptionMessage(pattern, pattern.length() - 1, parsingState.priorState));
     }
 
-    return (ThrowableMatcher)this.matchers.clone();
+    return (ThrowableMatcher)parsingState.matchers.clone();
+  }
+
+  private static final String buildIllegalStateExceptionMessage(final ParsingState state) {
+    return buildIllegalStateExceptionMessage(state.pattern, state.position, state.state);
   }
 
   private static final String buildIllegalStateExceptionMessage(final String s, final int position, final State state) {
@@ -595,6 +647,15 @@ public class ThrowablePattern {
       return returnValue;
     }
 
+    @Override
+    public final String getPattern() {
+      String returnValue = null;
+      if (this.delegate != null) {
+        returnValue = this.delegate.getPattern();
+      }
+      return returnValue;
+    }
+
   }
 
   private static final class ClassNameEqualityThrowableMatcher implements ThrowableMatcher {
@@ -613,26 +674,43 @@ public class ThrowablePattern {
       return t != null && t.getClass().getName().equals(this.className);
     }
 
+    @Override
+    public final String getPattern() {
+      return this.className;
+    }
+
   }
 
   private static final class PropertyBlockThrowableMatcher implements ThrowableMatcher {
     
     private static final long serialVersionUID = 1L;
 
+    private final String propertyBlock;
+
     private final Serializable expression;
 
     private PropertyBlockThrowableMatcher(final String propertyBlock) {
       super();
-      this.expression = MVEL.compileExpression(propertyBlock);
+      this.propertyBlock = propertyBlock;
+      if (propertyBlock != null) {
+        this.expression = MVEL.compileExpression(propertyBlock);
+      } else {
+        this.expression = null;
+      }
     }
 
     @Override
     public final boolean matches(final Throwable t) {
       boolean returnValue = false;
-      if (t != null) {
+      if (t != null && this.expression != null) {
         returnValue = Boolean.TRUE.equals(MVEL.executeExpression(this.expression, t));
       }
       return returnValue;
+    }
+
+    @Override
+    public final String getPattern() {
+      return this.propertyBlock;
     }
 
   }
@@ -645,10 +723,21 @@ public class ThrowablePattern {
 
     private int indexOfFirstNegativeMatcher;
 
-    private ConjunctiveThrowableMatcher() {
+    private final String pattern;
+
+    private ConjunctiveThrowableMatcher(final String pattern) {
       super();
+      if (pattern == null) {
+        throw new IllegalArgumentException("pattern", new NullPointerException("pattern == null"));
+      }
+      this.pattern = pattern;
       this.indexOfFirstNegativeMatcher = -1;
       this.matchers = new ArrayList<ThrowableListElementThrowableMatcher>();
+    }
+
+    @Override
+    public final String getPattern() {
+      return this.pattern;
     }
 
     private final void clear() {
@@ -659,6 +748,7 @@ public class ThrowablePattern {
       assert this.matchers != null;
       if (p != null) {
         this.matchers.add(p);
+
         if (p.offset < 0) {
           if (this.indexOfFirstNegativeMatcher < 0) {
             this.indexOfFirstNegativeMatcher = this.matchers.size() - 1;
@@ -669,6 +759,7 @@ public class ThrowablePattern {
             matcher.offset = offsetToAssign++;
           }
         }
+
       }
     }
 
@@ -753,91 +844,112 @@ public class ThrowablePattern {
     }
 
     @Override
+    public final String getPattern() {
+      if (this.cls == null) {
+        return null;
+      }
+      return String.format("%s...", this.cls.getName());
+    }
+
+    @Override
     public final String toString() {
       return (this.cls == null ? "null" : this.cls.getName()) + "...";
     }
 
   }
 
-  private final class MutableInteger extends Number implements Comparable<Number> {
+  private static final class ParsingState extends Reader {
 
-    private static final long serialVersionUID = 1L;
+    private int position;
 
-    private int value;
+    private int periodCount;
 
-    private MutableInteger(final int initialValue) {
-      super();
-      this.value = initialValue;
-    }
+    private final StringBuilder classNameBuffer;
 
-    private final void setValue(final int value) {
-      this.value = value;
-    }
-
-    @Override
-    public final int intValue() {
-      return this.value;
-    }
-
-    @Override
-    public final long longValue() {
-      return this.value;
-    }
-
-    @Override
-    public final float floatValue() {
-      return (float)this.value;
-    }
-
-    @Override
-    public final double doubleValue() {
-      return (double)this.value;
-    }
-
-    @Override
-    public final short shortValue() {
-      return (short)this.value;
-    }
-
-    @Override
-    public final byte byteValue() {
-      return (byte)this.value;
-    }
-
-    @Override
-    public final int compareTo(final Number other) {
-      int hisValue = 0;
-      if (other != null) {
-        hisValue = other.intValue();
-      }
-      if (this.value == hisValue) {
-        return 0;
-      } else if (this.value < hisValue) {
-        return -1;
-      } else {
-        return 1;
-      }
-    }
-
-    @Override
-    public final int hashCode() {
-      return this.value;
-    }
-
-    @Override
-    public final boolean equals(final Object other) {
-      if (other == this) {
-        return true;
-      } else if (other instanceof Number) {
-        return this.value == ((Number)other).intValue();
-      } else {
-        return false;
-      }
-    }
+    private final StringBuilder commentBuffer;
     
+    private final StringBuilder propertyBlockBuffer;
+
+    private boolean greedyGlob;
+
+    private int depthLevel;
+
+    private final ConjunctiveThrowableMatcher matchers;
+
+    private State state;
+
+    private State priorState;
+
+    private int character;
+
+    private final String pattern;
+
+    private final Reader reader;
+
+    private ParsingState(final String pattern) {
+      super();
+      if (pattern == null) {
+        throw new IllegalArgumentException("pattern", new NullPointerException("pattern == null"));
+      }
+      this.pattern = pattern;
+      this.reader = new StringReader(pattern);
+      this.state = State.START;
+      this.classNameBuffer = new StringBuilder();
+      this.commentBuffer = new StringBuilder();
+      this.propertyBlockBuffer = new StringBuilder();
+      this.matchers = new ConjunctiveThrowableMatcher(pattern);
+    }
+
     @Override
-    public final String toString() {
-      return String.valueOf(this.value);
+    public final int read() throws IOException {
+      final int returnValue = this.reader.read();
+      this.character = returnValue;
+      return returnValue;
+    }
+
+    @Override
+    public final int read(final char[] buffer) throws IOException {
+      return this.reader.read(buffer);
+    }
+
+    @Override
+    public final int read(final char[] buffer, final int offset, final int length) throws IOException {
+      return this.reader.read(buffer, offset, length);
+    }
+
+    @Override
+    public final int read(final CharBuffer buffer) throws IOException {
+      return this.reader.read(buffer);
+    }
+
+    @Override
+    public final boolean ready() throws IOException {
+      return this.reader.ready();
+    }
+
+    @Override
+    public final long skip(final long characterCount) throws IOException {
+      return this.reader.skip(characterCount);
+    }
+
+    @Override
+    public final void reset() throws IOException {
+      this.reader.reset();
+    }
+
+    @Override
+    public final boolean markSupported() {
+      return this.reader.markSupported();
+    }
+
+    @Override
+    public final void mark(final int readAheadLimit) throws IOException {
+      this.reader.mark(readAheadLimit);
+    }
+
+    @Override
+    public final void close() throws IOException {
+      this.reader.close();
     }
 
   }

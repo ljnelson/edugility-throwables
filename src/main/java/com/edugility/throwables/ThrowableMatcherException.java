@@ -27,22 +27,62 @@
  */
 package com.edugility.throwables;
 
+/**
+ * An {@link Exception} that indicates that something went wrong
+ * during an {@linkplain ThrowableMatcher#matches(Throwable) attempt
+ * to match a <tt>Throwable</tt>}.
+ *
+ * @author <a href="mailto:ljnelson@gmail.com">Laird Nelson</a>
+ *
+ * @see ThrowableMatcher
+ *
+ * @see ThrowablePattern
+ *
+ * @since 1.2-SNAPSHOT
+ */
 public class ThrowableMatcherException extends Exception {
 
+  /**
+   * The version of this class for serialization purposes.
+   */
   private static final long serialVersionUID = 1L;
 
+  /**
+   * Creates a new {@link ThrowableMatcherException}.
+   */
   public ThrowableMatcherException() {
     super();
   }
 
+  /**
+   * Creates a new {@link ThrowableMatcherException}.
+   *
+   * @param message a detail message explaining the problem; may be
+   * {@code null}
+   */
   public ThrowableMatcherException(final String message) {
     super(message);
   }
 
+  /**
+   * Creates a new {@link ThrowableMatcherException}.
+   *
+   * @param cause the {@link Throwable} that caused this {@link
+   * ThrowableMatcherException} to be thrown; may be {@code null}
+   */
   public ThrowableMatcherException(final Throwable cause) {
     super(cause);
   }
 
+  /**
+   * Creates a new {@link ThrowableMatcherException}.
+   *
+   * @param message a detail message explaining the problem; may be
+   * {@code null}
+   *
+   * @param cause the {@link Throwable} that caused this {@link
+   * ThrowableMatcherException} to be thrown; may be {@code null}
+   */
   public ThrowableMatcherException(final String message, final Throwable cause) {
     super(message, cause);
   }

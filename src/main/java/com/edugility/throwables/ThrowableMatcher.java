@@ -29,8 +29,43 @@ package com.edugility.throwables;
 
 import java.io.Serializable;
 
+/**
+ * A predicate interface whose implementations can match a {@link
+ * Throwable}.  {@link ThrowableMatcher} instances are most commonly
+ * returned by the {@link
+ * ThrowablePattern#newThrowableMatcher(String)} method.
+ *
+ * @author <a href="mailto:ljnelson@gmail.com">Laird Nelson</a>
+ *
+ * @see ThrowablePattern#newThrowableMatcher(String)
+ *
+ * @since 1.2-SNAPSHOT
+ */
 public interface ThrowableMatcher extends Serializable {
 
+  /**
+   * Returns {@code true} if the supplied {@link Throwable} is
+   * accepted or matched in some way.  The supplied {@link Throwable}
+   * may be {@code null}.
+   *
+   * @param t the {@link Throwable} to match; may be {@code null}
+   *
+   * @return {@code true} if and only if the supplied {@link
+   * Throwable} matches; {@code false} otherwise
+   *
+   * @exception ThrowableMatcherException if there was a problem
+   * determining a return value
+   */
   public boolean matches(final Throwable t) throws ThrowableMatcherException;
+
+  /**
+   * Returns the {@link String} form of the notional pattern that was
+   * used to construct this {@link ThrowableMatcher}.  Implementations
+   * are permitted to return {@code null}.
+   *
+   * @return the {@link String} form of the notional pattern that was
+   * used to construct this {@link ThrowableMatcher}, or {@code null}
+   */
+  public String getPattern();
 
 }
