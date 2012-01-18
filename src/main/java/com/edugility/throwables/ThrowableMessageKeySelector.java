@@ -46,7 +46,7 @@ public class ThrowableMessageKeySelector implements Serializable {
 
   private static final long serialVersionUID = 1L;
 
-  private static final String LS = System.getProperty("line.separator", "\n");
+  protected static final String LS = System.getProperty("line.separator", "\n");
 
   private final Map<String, Set<ThrowableMatcher>> matchers;
 
@@ -191,138 +191,6 @@ public class ThrowableMessageKeySelector implements Serializable {
       }
     }
     return returnValue;
-  }
-
-  public static final ThrowableMessageKeySelector read(final Reader reader) throws ClassNotFoundException, IOException, ThrowableMatcherException {
-    if (reader == null) {
-      throw new IllegalArgumentException("reader", new NullPointerException("reader"));
-    }
-    if (reader instanceof BufferedReader) {
-      return read((BufferedReader)reader);
-    } else {
-      return read(new BufferedReader(reader));
-    }
-  }
-
-  @SuppressWarnings("fallthrough")
-  public static final ThrowableMessageKeySelector read(final BufferedReader reader) throws ClassNotFoundException, IOException, ThrowableMatcherException {
-    if (reader == null) {
-      throw new IllegalArgumentException("reader", new NullPointerException("reader"));
-    }
-
-    final ThrowableMessageKeySelector returnValue = new ThrowableMessageKeySelector();
-
-    final Set<String> patterns = new LinkedHashSet<String>();
-    final List<String> messageLines = new ArrayList<String>();
-    State priorState = null;
-    State state = State.NORMAL;
-    String line = null;
-    for (int i = 1; (line = reader.readLine()) != null; i++) {
-      line = line.trim();
-
-      switch (state) {
-
-        // BLOCK_COMMENT
-      case BLOCK_COMMENT:
-        final int endIndex = line.indexOf("*/");
-        if (endIndex < 0) {
-          break;
-        }
-        line = line.substring(endIndex + 2).trim();
-        state = state.NORMAL;
-        /*
-         * FALL THROUGH TO STATE NORMAL
-         */
-        // end BLOCK_COMMENT
-
-
-        // NORMAL
-      case NORMAL:
-        if (line.isEmpty()) {
-          break;
-        } else if (line.startsWith("--")) {
-          throw new IllegalStateException("\"--\" is not permitted here at line " + i);
-        } else if (line.startsWith("#") || line.startsWith("//") || line.startsWith("!")) {
-          // line comment; nothing to do
-          break;
-        } else if (line.startsWith("/*")) {
-          state = State.BLOCK_COMMENT;
-          break;
-        } else {
-          state = State.MATCHERS;
-          patterns.add(line);
-          break;
-        }
-        // end NORMAL
-
-
-        // MATCHERS
-      case MATCHERS:
-        if (line.isEmpty()) {
-          throw new IllegalStateException("An empty line is not permitted here at line " + i);
-        } else if (line.startsWith("--")) {
-          state = State.MESSAGE;
-        } else {
-          patterns.add(line);
-        }
-        break;
-        // end MATCHERS
-
-      case MESSAGE:
-        if (line.isEmpty()) {
-          final StringBuilder message = new StringBuilder();
-          final Iterator<String> iterator = messageLines.iterator();
-          assert iterator != null;
-          while (iterator.hasNext()) {
-            final String ml = iterator.next();
-            if (ml != null) {
-              message.append(ml);
-              if (iterator.hasNext()) {
-                message.append(LS);
-              }
-            }
-          }
-          returnValue.addPatterns(patterns, message.toString());
-          patterns.clear();
-          messageLines.clear();
-          state = State.NORMAL;
-        } else {
-          messageLines.add(line);
-        }
-        break;
-
-      default:
-        throw new IllegalStateException("Unexpected state: " + state);
-      }
-      priorState = state;
-    }
-
-    if (!messageLines.isEmpty() && !patterns.isEmpty()) {
-      final StringBuilder message = new StringBuilder();
-      final Iterator<String> iterator = messageLines.iterator();
-      assert iterator != null;
-      while (iterator.hasNext()) {
-        final String ml = iterator.next();
-        if (ml != null) {
-          message.append(ml);
-          if (iterator.hasNext()) {
-            message.append(LS);
-          }
-        }
-      }
-      returnValue.addPatterns(patterns, message.toString());
-      patterns.clear();
-      messageLines.clear();
-    }
-
-    return returnValue;
-  }
-
-  private enum State {
-    NORMAL,
-    BLOCK_COMMENT,
-    MATCHERS,
-    MESSAGE
   }
 
 }
