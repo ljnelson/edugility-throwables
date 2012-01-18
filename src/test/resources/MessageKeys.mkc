@@ -1,0 +1,26 @@
+/*
+ * Comment
+ */
+java.lang.RuntimeException.../java.lang.IllegalStateException(message == "hello")
+--
+There was a RuntimeException followed by an IllegalStateException whose message was hello.
+
+/*
+ * Another comment
+that goes on */     java.sql.SQLException/**/java.lang.Exception
+--
+A key
+goes here
+
+// Another comment
+
+
+
+# Still yet another
+# comment
+
+! One more comment
+**/java.lang.Exception... # and a comment here
+--
+This is the default message.
+

@@ -197,6 +197,10 @@ public class ThrowablePattern implements Serializable {
     parsingState.commentBuffer.setLength(0);
   }
 
+  private static final void leftAnchor(final ParsingState parsingState) {
+    parsingState.leftAnchor = true;
+  }
+
   /**
    * Compiles the supplied pattern into a new {@link
    * ThrowableMatcher}.  This method never returns {@code null}.
@@ -292,9 +296,16 @@ public class ThrowablePattern implements Serializable {
 
         switch (parsingState.character) {
 
-        case '/':
+        case '^':
+          start(parsingState);
+          leftAnchor(parsingState);
+          parsingState.state = State.NORMAL;
+          break;
+
+        case '/':          
           start(parsingState);
           slash(parsingState, false);
+          leftAnchor(parsingState);
           parsingState.state = State.NORMAL;
           break;
 
@@ -860,6 +871,10 @@ public class ThrowablePattern implements Serializable {
 
   private static final class ParsingState extends Reader {
 
+    private boolean leftAnchor;
+
+    private boolean rightAnchor;
+
     private int position;
 
     private int periodCount;
@@ -892,6 +907,8 @@ public class ThrowablePattern implements Serializable {
         throw new IllegalArgumentException("pattern", new NullPointerException("pattern == null"));
       }
       this.pattern = pattern;
+      this.leftAnchor = true; // XXX TODO FIXME for now
+      this.rightAnchor = false;
       this.reader = new StringReader(pattern);
       this.state = State.START;
       this.classNameBuffer = new StringBuilder();
