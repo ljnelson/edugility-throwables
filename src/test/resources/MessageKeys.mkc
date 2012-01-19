@@ -15,5 +15,5 @@ goes here
 # One more comment
 **/java.lang.Exception... # and a comment here
 --
-This is the default message.
+This is the default message: @{this.toString()}.
 

@@ -211,21 +211,27 @@ public class ThrowableMessageKeySelector implements Serializable {
     }
   }
 
+  public final String getKey(final Throwable chain) throws ThrowableMatcherException {
+    return this.getKey(chain, null);
+  }
+
   public String getKey(final Throwable chain, final String defaultValue) throws ThrowableMatcherException {
     String returnValue = defaultValue;
-    final Set<Entry<String, Set<ThrowableMatcher>>> entrySet = this.matchers.entrySet();
-    if (entrySet != null) {
-      ENTRY_LOOP:
-      for (final Entry<String, Set<ThrowableMatcher>> entry : entrySet) {
-        if (entry != null) {
-          final String messageKey = entry.getKey();
-          if (messageKey != null) {
-            final Iterable<ThrowableMatcher> matchers = entry.getValue();
-            if (matchers != null) {
-              for (final ThrowableMatcher matcher : matchers) {
-                if (matcher != null && matcher.matches(chain)) {
-                  returnValue = messageKey;
-                  break ENTRY_LOOP;
+    if (this.matchers != null && !this.matchers.isEmpty()) {
+      final Set<Entry<String, Set<ThrowableMatcher>>> entrySet = this.matchers.entrySet();
+      if (entrySet != null) {
+        ENTRY_LOOP:
+        for (final Entry<String, Set<ThrowableMatcher>> entry : entrySet) {
+          if (entry != null) {
+            final String messageKey = entry.getKey();
+            if (messageKey != null) {
+              final Iterable<ThrowableMatcher> matchers = entry.getValue();
+              if (matchers != null) {
+                for (final ThrowableMatcher matcher : matchers) {
+                  if (matcher != null && matcher.matches(chain)) {
+                    returnValue = messageKey;
+                    break ENTRY_LOOP;
+                  }
                 }
               }
             }

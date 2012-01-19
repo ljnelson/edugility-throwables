@@ -30,6 +30,7 @@ package com.edugility.throwables;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.IOException;
+import java.io.LineNumberReader;
 import java.io.Reader;
 
 import java.net.URL;
@@ -44,7 +45,7 @@ import static org.junit.Assert.*;
 
 public class TestCaseThrowableMessageKeySelector {
 
-  private Reader reader;
+  private LineNumberReader reader;
 
   public TestCaseThrowableMessageKeySelector() {
     super();
@@ -54,7 +55,7 @@ public class TestCaseThrowableMessageKeySelector {
   public void setUp() throws Exception {
     final URL catalogURL = this.getClass().getResource("/MessageKeys.mkc");
     assertNotNull(catalogURL);
-    this.reader = new InputStreamReader(catalogURL.openStream(), "UTF-8");
+    this.reader = new LineNumberReader(new InputStreamReader(catalogURL.openStream(), "UTF-8"));
   }
 
   @After
@@ -63,21 +64,24 @@ public class TestCaseThrowableMessageKeySelector {
   }
 
   @Test
-  public void testRead() throws Exception {
+  public void testLoad() throws Exception {
     assertNotNull(this.reader);
-    final ThrowableMessageFactory selector = ThrowableMessageFactory.read(this.reader);
+    final ThrowableMessageFactory selector = new ThrowableMessageFactory();
+    selector.load(this.reader);
     assertNotNull(selector);
     final IllegalStateException bottom = new IllegalStateException("hello");
     final RuntimeException top = new RuntimeException(bottom);
     assertEquals("com.edugility.throwables.Bundle#noDice", selector.getKey(top, "Default value"));
     assertEquals("No dice, senor.", selector.getMessage(top, "Default value"));
-    assertEquals("This is the default message.", selector.getKey(bottom, "Default value"));
+    assertEquals("This is the default message: @{this.toString()}.", selector.getKey(bottom, "Default value"));
+    System.out.println(selector.getMessage(bottom));
   }
 
   @Test
   public void testRead2() throws Exception {
     assertNotNull(this.reader);
-    final ThrowableMessageKeySelector selector = ThrowableMessageFactory.read(this.reader);
+    final ThrowableMessageFactory selector = new ThrowableMessageFactory();
+    selector.load(this.reader);
     assertNotNull(selector);
     final Exception bottom = new Exception("bottom");
     final IOException middle = new IOException(bottom);
@@ -89,7 +93,8 @@ public class TestCaseThrowableMessageKeySelector {
   @Test
   public void testGetMessage() throws Exception {
     assertNotNull(this.reader);
-    final ThrowableMessageFactory factory = ThrowableMessageFactory.read(this.reader);
+    final ThrowableMessageFactory factory = new ThrowableMessageFactory();
+    factory.load(this.reader);
     assertNotNull(factory);
     final Exception bottom = new Exception("bottom");
     final IOException middle = new IOException("middle", bottom);
