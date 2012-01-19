@@ -28,8 +28,10 @@
 package com.edugility.throwables;
 
 import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.io.LineNumberReader;
 import java.io.Reader;
+import java.io.Serializable;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -40,23 +42,28 @@ import java.util.MissingResourceException;
 import java.util.ResourceBundle;
 import java.util.Set;
 
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 public class ThrowableMessageFactory extends ThrowableMessageKeySelector {
 
   private static final long serialVersionUID = 1L;
   
-  private ResourceBundle messages;
+  private ResourceBundle defaultMessages;
 
   public ThrowableMessageFactory() {
     this(null);
   }
 
-  public ThrowableMessageFactory(final ResourceBundle messages) {
+  public ThrowableMessageFactory(final String resourceBundleName) {
     super();
-    this.messages = messages;
+    if (resourceBundleName != null) {
+      this.setBundle(this.getBundle(resourceBundleName, Locale.getDefault()));
+    }
   }
 
   public ResourceBundle getBundle() {
-    return this.messages;
+    return this.defaultMessages;
   }
 
   protected ResourceBundle getBundle(final String bundleName, Locale locale) {
@@ -69,8 +76,8 @@ public class ThrowableMessageFactory extends ThrowableMessageKeySelector {
     return ResourceBundle.getBundle(bundleName, locale, Thread.currentThread().getContextClassLoader());
   }
 
-  public void setBundle(final ResourceBundle messages) {
-    this.messages = messages;
+  private final void setBundle(final ResourceBundle messages) {
+    this.defaultMessages = messages;
   }
 
   public String getMessage(final Throwable throwableChain, final String defaultValue) throws ThrowableMatcherException {
@@ -84,43 +91,47 @@ public class ThrowableMessageFactory extends ThrowableMessageKeySelector {
     if (locale == null) {
       locale = Locale.getDefault();
     }
-    String message = defaultValue;
+    String message = null;
     String messageKey = this.getKey(throwableChain, defaultValue);
     if (messageKey != null) {
+
+      final ResourceBundle messages;
+      final String bundleKey;
+
       final int poundIndex = messageKey.indexOf("#");
       if (poundIndex < 0) {
-        // message key is the actual message itself.
+        // e.g. "There was no file found by that name."
+        messages = null;
+        bundleKey = null;
         message = messageKey;
       } else if (poundIndex == 0) {
-        // whole message is a bundle lookup, but we didn't specify the bundle; use ours.
-        final ResourceBundle messages = this.getBundle();
-        if (messages != null) {
-          try {
-            message = messages.getString(messageKey.substring(1));
-          } catch (final MissingResourceException kaboom) {
-            // TODO: log at WARNING level
-            kaboom.printStackTrace();
-            message = null;
-          }
+        // e.g. "#fileNotFound"
+        messages = this.getBundle();
+        bundleKey = messageKey.substring(1);
+      } else if (poundIndex >= messageKey.length() - 1) {        
+        // e.g. "com.foobar.bizbaw.Messages#"
+        if (this.logger != null && this.logger.isLoggable(Level.WARNING)) {
+          this.logger.logp(Level.WARNING, this.getClass().getName(), "getMessage", "messageKeyEndsWithPound", messageKey);
         }
-      } else if (poundIndex >= messageKey.length() - 1) {
-        // line terminates in a pound; that should be a bundle name,
-        // but there's no key.  We'll just use the whole thing as a
-        // message.
-        message = messageKey.substring(0, messageKey.length() - 2).trim();
+        messages = null;
+        bundleKey = null;
       } else {
-        final String bundleName = messageKey.substring(0, poundIndex).trim();
-        final String bundleKey = messageKey.substring(poundIndex + 1).trim();
-        final ResourceBundle messages = this.getBundle(bundleName, locale);
-        if (messages != null) {
-          try {
-            message = messages.getString(bundleKey);
-          } catch (final MissingResourceException notFound) {
-            // TODO: log at WARNING level
-            message = null;
+        // e.g. "com.foobar.bizbaw.Messages#fileNotFound"
+        messages = this.getBundle(messageKey.substring(0, poundIndex).trim(), locale);
+        bundleKey = messageKey.substring(poundIndex + 1).trim();
+      }
+
+      if (messages != null && bundleKey != null) {
+        try {
+          message = messages.getString(bundleKey);
+        } catch (final MissingResourceException notFound) {
+          if (this.logger != null && this.logger.isLoggable(Level.WARNING)) {
+            this.logger.logp(Level.WARNING, this.getClass().getName(), "getMessage", "noSuchBundleKey", new Object[] { messageKey });
           }
+          message = null;
         }
       }
+      
     }
     if (message == null) {
       message = defaultValue;
@@ -144,9 +155,15 @@ public class ThrowableMessageFactory extends ThrowableMessageKeySelector {
     if (reader == null) {
       throw new IllegalArgumentException("reader", new NullPointerException("reader"));
     }
-
     final ThrowableMessageFactory returnValue = new ThrowableMessageFactory();
+    returnValue.load(reader);
+    return returnValue;
+  }
 
+  public void load(final LineNumberReader reader) throws ClassNotFoundException, IOException, ThrowableMatcherException {
+    if (reader == null) {
+      throw new IllegalArgumentException("reader", new NullPointerException("reader"));
+    }
     final Set<String> patterns = new LinkedHashSet<String>();
     final List<String> messageLines = new ArrayList<String>();
     State state = State.NORMAL;
@@ -203,7 +220,7 @@ public class ThrowableMessageFactory extends ThrowableMessageKeySelector {
               }
             }
           }
-          returnValue.addPatterns(patterns, message.toString());
+          this.addPatterns(patterns, message.toString());
           patterns.clear();
           messageLines.clear();
           state = State.NORMAL;
@@ -233,12 +250,10 @@ public class ThrowableMessageFactory extends ThrowableMessageKeySelector {
           }
         }
       }
-      returnValue.addPatterns(patterns, message.toString());
+      this.addPatterns(patterns, message.toString());
       patterns.clear();
       messageLines.clear();
     }
-
-    return returnValue;
   }
 
   private enum State {

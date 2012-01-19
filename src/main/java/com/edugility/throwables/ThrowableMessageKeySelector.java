@@ -30,6 +30,7 @@ package com.edugility.throwables;
 import java.io.Reader;
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.io.Serializable;
 
 import java.util.ArrayList;
@@ -40,7 +41,12 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.MissingResourceException;
+import java.util.ResourceBundle;
 import java.util.Set;
+
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class ThrowableMessageKeySelector implements Serializable {
 
@@ -48,11 +54,48 @@ public class ThrowableMessageKeySelector implements Serializable {
 
   protected static final String LS = System.getProperty("line.separator", "\n");
 
+  protected transient Logger logger;
+
   private final Map<String, Set<ThrowableMatcher>> matchers;
 
   public ThrowableMessageKeySelector() {
     super();
+    this.logger = this.createLogger();
+    if (this.logger == null) {
+      this.logger = this.defaultCreateLogger();
+    }
+    assert this.logger != null;
     this.matchers = new LinkedHashMap<String, Set<ThrowableMatcher>>();
+  }
+
+  protected Logger createLogger() {
+    return this.defaultCreateLogger();
+  }
+
+  private final Logger defaultCreateLogger() {
+    Class<?> c = this.getClass();
+    final String className = c.getName();
+    String bundleName = null;
+    while (c != null && bundleName == null) {
+      bundleName = String.format("%sLogMessages", c.getName());
+      ResourceBundle rb = null;
+      try {
+        rb = ResourceBundle.getBundle(bundleName);        
+      } catch (final MissingResourceException noBundle) {
+        bundleName = null;
+        rb = null;
+      }
+      c = c.getSuperclass();
+    }
+    final Logger logger;
+    if (bundleName != null) {
+      logger = Logger.getLogger(className, bundleName);
+      assert logger != null;
+      logger.log(Level.CONFIG, "usingBundleName", bundleName);
+    } else {
+      logger = Logger.getLogger(className);
+    }
+    return logger;
   }
 
   public final void putPattern(final String pattern, final String key) throws ClassNotFoundException, IOException, ThrowableMatcherException {
@@ -191,6 +234,19 @@ public class ThrowableMessageKeySelector implements Serializable {
       }
     }
     return returnValue;
+  }
+
+  private final void readObject(final ObjectInputStream stream) throws ClassNotFoundException, IOException {
+    if (stream != null) {
+      stream.defaultReadObject();
+    }
+    if (this.logger == null) {
+      this.logger = this.createLogger();
+      if (this.logger == null) {
+        this.logger = this.defaultCreateLogger();
+      }
+    }
+    assert this.logger != null;
   }
 
 }
