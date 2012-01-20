@@ -1,8 +1,6 @@
 /* -*- mode: Java; c-basic-offset: 2; indent-tabs-mode: nil -*-
  *
- * $Id$
- *
- * Copyright (c) 2010-2011 Edugility LLC.
+ * Copyright (c) 2010-2012 Edugility LLC.
  *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
@@ -57,8 +55,10 @@ import org.mvel2.MVEL;
 public class ThrowablePattern implements Serializable {
 
   private static final long serialVersionUID = 1L;
-  
+
   private static final String LS = System.getProperty("line.separator", "\n");
+
+  private final ConjunctiveThrowableMatcher matcher;
 
   private enum State {
     START,
@@ -70,64 +70,55 @@ public class ThrowablePattern implements Serializable {
     INDETERMINATE_PERIOD,
     ELLIPSIS,
     IDENTIFIER,
+    REFERENCE,
     PROPERTY_BLOCK
   }
 
   /**
    * Creates a new {@link ThrowablePattern}.
    */
+  @Deprecated
   public ThrowablePattern() {
     super();
+    this.matcher = null;
   }
 
-  /**
-   * Loads the {@link Class} named by the supplied classname.  This
-   * implementation first attempts to use the {@linkplain
-   * Thread#getContextClassLoader() context <tt>ClassLoader</tt>}, and
-   * then uses the {@link ClassLoader} returned by {@link
-   * Class#getClassLoader() Throwable.class.getClassLoader()}.
-   *
-   * @return the loaded {@link Class}; never {@code null}
-   *
-   * @exception ClassNotFoundException if the {@link Class} could not
-   * be loaded
-   */
-  protected Class<? extends Throwable> loadClass(final String name) throws ClassNotFoundException {
-    Class<?> c = null;
-    ClassLoader loader = Thread.currentThread().getContextClassLoader();
-    if (loader != null) {
-      c = loader.loadClass(name);
-    } else {
-      loader = Throwable.class.getClassLoader();
-      c = loader.loadClass(name);
-    }
-    @SuppressWarnings("unchecked")
-    final Class<? extends Throwable> returnValue = (Class<? extends Throwable>)c;
-    return returnValue;
+  private ThrowablePattern(final ConjunctiveThrowableMatcher matcher) {
+    super();
+    this.matcher = matcher;
   }
 
   private static final void newElementMatcher(final ParsingState parsingState, final ThrowableMatcher delegate) {
     parsingState.matchers.add(new ThrowableListElementThrowableMatcher(parsingState.depthLevel, delegate));
   }
 
-  private final void subclassTest(final ParsingState parsingState) throws ClassNotFoundException {
-    newElementMatcher(parsingState, new InstanceOfThrowableMatcher(this.loadClass(parsingState.classNameBuffer.toString())));
-  }
-
-  private static final void classNameMatchTest(final ParsingState parsingState) {
-    newElementMatcher(parsingState, new ClassNameEqualityThrowableMatcher(parsingState.classNameBuffer.toString()));
-  }
-
   private static final void ellipsis(final ParsingState parsingState) {
 
   }
 
-  private static final void identifierStart(final ParsingState parsingState) {    
+  private static final void identifierStart(final ParsingState parsingState) {
     parsingState.classNameBuffer.setLength(0);
   }
 
+  private static final void identifier(final ParsingState parsingState, final int c) {
+    parsingState.classNameBuffer.append((char)c);
+  }
+
+  private static final void identifier(final ParsingState parsingState, final String s) {
+    parsingState.classNameBuffer.append(s);
+  }
+
   private static final void identifierEnd(final ParsingState parsingState) {
-    
+
+  }
+
+  @SuppressWarnings("unchecked")
+  private static final void subclassTest(final ParsingState parsingState, final ClassLoader loader) throws ClassNotFoundException {
+    newElementMatcher(parsingState, new InstanceOfThrowableMatcher((Class<? extends Throwable>)loader.loadClass(parsingState.classNameBuffer.toString())));
+  }
+
+  private static final void classNameMatchTest(final ParsingState parsingState) {
+    newElementMatcher(parsingState, new ClassNameEqualityThrowableMatcher(parsingState.classNameBuffer.toString()));
   }
 
   private static final void slash(final ParsingState parsingState) {
@@ -144,12 +135,28 @@ public class ThrowablePattern implements Serializable {
     }
   }
 
-  private static final void identifier(final ParsingState parsingState, final int c) {    
-    parsingState.classNameBuffer.append((char)c);
+  private static final void referenceStart(final ParsingState parsingState) {
+    parsingState.referenceBuffer.setLength(0);
   }
 
-  private static final void identifier(final ParsingState parsingState, final String s) {
-    parsingState.classNameBuffer.append(s);
+  private static final void referenceCharacter(final ParsingState parsingState) {
+    parsingState.referenceBuffer.append((char)parsingState.character);
+  }
+
+  private static final void referenceEnd(final ParsingState parsingState) {
+
+  }
+
+  private static final void setReference(final ParsingState parsingState) {
+    // TODO: install a matcher whose matches() method returns true, but
+    final String referenceName = parsingState.referenceBuffer.toString();
+    Object key = null;
+    try {
+      key = Integer.parseInt(referenceName);
+    } catch (final NumberFormatException notANumber) {
+      key = referenceName;
+    }
+    newElementMatcher(parsingState, new ReferenceStoringThrowableMatcher(key));
   }
 
   private static final void glob(final ParsingState parsingState) {
@@ -178,7 +185,7 @@ public class ThrowablePattern implements Serializable {
     parsingState.propertyBlockBuffer.setLength(0);
   }
 
-  private static final void propertyBlock(final ParsingState parsingState, final int c) {    
+  private static final void propertyBlock(final ParsingState parsingState, final int c) {
     parsingState.propertyBlockBuffer.append((char)c);
   }
 
@@ -201,13 +208,20 @@ public class ThrowablePattern implements Serializable {
     parsingState.leftAnchor = true;
   }
 
+  public ThrowableMatcher matcher(final Throwable throwableChain) {
+    final ConjunctiveThrowableMatcher result = this.matcher.clone();
+    assert result != null;
+    result.setThrowable(throwableChain);
+    return result;
+  }
+
   /**
    * Compiles the supplied pattern into a new {@link
    * ThrowableMatcher}.  This method never returns {@code null}.
    *
    * <p>The supplied pattern must conform to the following (currently
    * informal) grammar:</p>
-   * 
+   *
    * <pre>
    *
    * Pattern = PatternStart '<b>/</b>' PatternBody
@@ -215,7 +229,7 @@ public class ThrowablePattern implements Serializable {
    * PatternStart = '<b>/</b>'? ( GreedyGlob | ClassTest )
    *
    * GreedyGlob = '<b>**</b>'
-   * 
+   *
    * PatternBody = ClassTest ( '<b>/</b>' ( GreedyGlob | ClassTest ) )*
    *
    * ClassTest = ( ClassName Ellipsis? PropertyBlock? ) | Glob
@@ -270,14 +284,35 @@ public class ThrowablePattern implements Serializable {
    * @exception ClassNotFoundException if the supplied {@code pattern}
    * contains a segment that will result in the attempted loading of a
    * {@link Class}, and if that class loading operation fails
-   * 
+   *
    * @exception IOException if {@linkplain StringReader#read()
    * reading of the supplied <tt>String</tt>} fails for some obscure
    * reason
+   *
+   * @deprecated Under construction; see the {@code compile(String)}
+   * method instead.
    */
-  public ThrowableMatcher newThrowableMatcher(final String pattern) throws ClassNotFoundException, IOException {
+  @Deprecated
+  public final ThrowableMatcher newThrowableMatcher(final String pattern) throws ClassNotFoundException, IOException {
     if (pattern == null) {
       throw new IllegalArgumentException("pattern", new NullPointerException("pattern == null"));
+    }
+    final ThrowablePattern dummy = compile(pattern, Thread.currentThread().getContextClassLoader());
+    assert dummy != null;
+    return dummy.matcher;
+  }
+
+  public static final ThrowablePattern compile(final String pattern) throws ClassNotFoundException, IOException {
+    return compile(pattern, Thread.currentThread().getContextClassLoader());
+  }
+
+  public static final ThrowablePattern compile(final String pattern, ClassLoader loader) throws ClassNotFoundException, IOException {
+
+    if (loader == null) {
+      loader = Thread.currentThread().getContextClassLoader();
+      if (loader == null) {
+        loader = Throwable.class.getClassLoader();
+      }
     }
 
     final ParsingState parsingState = new ParsingState(pattern);
@@ -288,7 +323,7 @@ public class ThrowablePattern implements Serializable {
 
         // START
       case START:
-        
+
         if (Character.isWhitespace(parsingState.character)) {
           // Eat whitespace
           break;
@@ -302,7 +337,7 @@ public class ThrowablePattern implements Serializable {
           parsingState.state = State.NORMAL;
           break;
 
-        case '/':          
+        case '/':
           start(parsingState);
           slash(parsingState, false);
           leftAnchor(parsingState);
@@ -404,7 +439,7 @@ public class ThrowablePattern implements Serializable {
             identifierEnd(parsingState);
             parsingState.state = State.ELLIPSIS;
             ellipsis(parsingState);
-            subclassTest(parsingState);
+            subclassTest(parsingState, loader);
           }
           break;
 
@@ -427,7 +462,7 @@ public class ThrowablePattern implements Serializable {
         if (Character.isWhitespace(parsingState.character) || parsingState.character == '/') {
           parsingState.state = State.GLOB;
           glob(parsingState);
-          subclassTest(parsingState);
+          subclassTest(parsingState, loader);
           parsingState.state = State.NORMAL;
           break;
         }
@@ -472,7 +507,7 @@ public class ThrowablePattern implements Serializable {
 
         // IDENTIFIER
       case IDENTIFIER:
-        
+
         if (Character.isWhitespace(parsingState.character)) {
           // End the identifier, eat the whitespace, and reset the state
           identifierEnd(parsingState);
@@ -492,7 +527,7 @@ public class ThrowablePattern implements Serializable {
           identifierEnd(parsingState);
           parsingState.state = State.ELLIPSIS;
           ellipsis(parsingState);
-          subclassTest(parsingState);
+          subclassTest(parsingState, loader);
           break;
 
         case '/':
@@ -500,6 +535,11 @@ public class ThrowablePattern implements Serializable {
           classNameMatchTest(parsingState);
           slash(parsingState);
           parsingState.state = State.NORMAL;
+          break;
+
+        case '[':
+          parsingState.state = State.REFERENCE;
+          referenceStart(parsingState);
           break;
 
         case '(':
@@ -518,6 +558,29 @@ public class ThrowablePattern implements Serializable {
         break;
         // end IDENTIFIER
 
+
+        // REFERENCE
+      case REFERENCE:
+
+        if (Character.isWhitespace(parsingState.character)) {
+          // Eat whitespace
+          break;
+        }
+
+        switch (parsingState.character) {
+
+        case ']':
+          referenceEnd(parsingState);
+          setReference(parsingState);
+          parsingState.state = State.NORMAL;
+          break;
+
+        default:
+          referenceCharacter(parsingState);
+        }
+
+        break;
+        // end REFERENCE
 
         // ELLIPSIS
       case ELLIPSIS:
@@ -539,7 +602,7 @@ public class ThrowablePattern implements Serializable {
         case '#':
           parsingState.state = State.COMMENT;
           commentStart(parsingState);
-          break;          
+          break;
 
         default:
           parsingState.state = State.NORMAL;
@@ -592,7 +655,8 @@ public class ThrowablePattern implements Serializable {
       throw new IllegalStateException(buildIllegalStateExceptionMessage(pattern, pattern.length() - 1, parsingState.priorState));
     }
 
-    return (ThrowableMatcher)parsingState.matchers.clone();
+    final ConjunctiveThrowableMatcher matcher = parsingState.matchers.clone();
+    return new ThrowablePattern(matcher);
   }
 
   private static final String buildIllegalStateExceptionMessage(final ParsingState state) {
@@ -616,7 +680,69 @@ public class ThrowablePattern implements Serializable {
     return sb.toString();
   }
 
-  private static final class ThrowableListElementThrowableMatcher implements ThrowableMatcher {
+  private static abstract class AbstractThrowableMatcher implements ThrowableMatcher {
+
+    private static final long serialVersionUID = 1L;
+
+    private Throwable throwableChain;
+
+    protected AbstractThrowableMatcher() {
+      super();
+    }
+
+    @Override
+    public void setThrowable(final Throwable throwableChain) {
+      this.throwableChain = throwableChain;
+    }
+
+    @Override
+    public Throwable getThrowable() {
+      return this.throwableChain;
+    }
+
+    @Override
+    public Throwable getReference(final Object key) {
+      return null;
+    }
+
+  }
+
+  private static final class ReferenceStoringThrowableMatcher extends AbstractThrowableMatcher {
+
+    private static final long serialVersionUID = 1L;
+
+    private final Object key;
+
+    private ReferenceStoringThrowableMatcher(final Object key) {
+      super();
+      this.key = key;
+    }
+
+    @Override
+    public String getPattern() {
+      return "[" + this.key + "]";
+    }
+
+    @Override
+    public final boolean matches() {
+      return this.getThrowable() != null;
+    }
+
+    @Override
+    public Throwable getReference(final Object key) {
+      if (key == null) {
+        if (this.key == null) {
+          return this.getThrowable();
+        }
+      } else if (key.equals(this.key)) {
+        return this.getThrowable();
+      }
+      return null;
+    }
+
+  }
+
+  private static final class ThrowableListElementThrowableMatcher extends AbstractThrowableMatcher {
 
     private static final long serialVersionUID = 1L;
 
@@ -630,6 +756,45 @@ public class ThrowablePattern implements Serializable {
       this.delegate = delegate;
     }
 
+    @Override
+    public void setThrowable(Throwable t) {
+      final List<Throwable> list = toList(t);
+      assert list != null;
+      final int index;
+      if (this.offset < 0) {
+        // This is quite hackish.  -1 means the last element.  -2 means the next-to-last element.
+        index = list.size() + this.offset; // remember, this.offset is negative
+      } else {
+        index = this.offset;
+      }
+      if (index >= 0 && index < list.size()) {
+        t = list.get(index);
+      } else {
+        t = null;
+      }
+      if (this.delegate != null) {
+        this.delegate.setThrowable(t);
+      }
+    }
+
+    @Override
+    public Throwable getThrowable() {
+      Throwable t = null;
+      if (this.delegate != null) {
+        t = this.delegate.getThrowable();
+      }
+      return t;
+    }
+
+    @Override
+    public Throwable getReference(final Object key) {
+      Throwable t = null;
+      if (this.delegate != null) {
+        t = this.delegate.getReference(key);
+      }
+      return t;
+    }
+
     private static final List<Throwable> toList(Throwable t) {
       final List<Throwable> returnValue = new ArrayList<Throwable>();
       if (t != null) {
@@ -641,21 +806,8 @@ public class ThrowablePattern implements Serializable {
     }
 
     @Override
-    public final boolean matches(final Throwable t) throws ThrowableMatcherException {
-      boolean returnValue = false;
-      final List<Throwable> list = toList(t);
-      assert list != null;
-      final int index;
-      if (this.offset < 0) {
-        // This is quite hackish.  -1 means the last element.  -2 means the next-to-last element.
-        index = list.size() + this.offset; // remember, this.offset is negative
-      } else {
-        index = this.offset;
-      }
-      if (this.delegate != null && index >= 0 && index < list.size()) {
-        returnValue = this.delegate.matches(list.get(index));
-      }
-      return returnValue;
+    public final boolean matches() throws ThrowableMatcherException {
+      return this.delegate != null && this.delegate.matches();
     }
 
     @Override
@@ -669,8 +821,8 @@ public class ThrowablePattern implements Serializable {
 
   }
 
-  private static final class ClassNameEqualityThrowableMatcher implements ThrowableMatcher {
-    
+  private static final class ClassNameEqualityThrowableMatcher extends AbstractThrowableMatcher {
+
     private static final long serialVersionUID = 1L;
 
     private final String className;
@@ -681,7 +833,8 @@ public class ThrowablePattern implements Serializable {
     }
 
     @Override
-    public final boolean matches(final Throwable t) {
+    public final boolean matches() {
+      final Throwable t = this.getThrowable();
       return t != null && t.getClass().getName().equals(this.className);
     }
 
@@ -692,8 +845,8 @@ public class ThrowablePattern implements Serializable {
 
   }
 
-  private static final class PropertyBlockThrowableMatcher implements ThrowableMatcher {
-    
+  private static final class PropertyBlockThrowableMatcher extends AbstractThrowableMatcher {
+
     private static final long serialVersionUID = 1L;
 
     private final String propertyBlock;
@@ -711,8 +864,9 @@ public class ThrowablePattern implements Serializable {
     }
 
     @Override
-    public final boolean matches(final Throwable t) {
+    public final boolean matches() throws ThrowableMatcherException {
       boolean returnValue = false;
+      final Throwable t = this.getThrowable();
       if (t != null && this.expression != null) {
         returnValue = Boolean.TRUE.equals(MVEL.executeExpression(this.expression, t));
       }
@@ -726,7 +880,7 @@ public class ThrowablePattern implements Serializable {
 
   }
 
-  private static final class ConjunctiveThrowableMatcher implements ThrowableMatcher, Cloneable {
+  private static final class ConjunctiveThrowableMatcher extends AbstractThrowableMatcher implements Cloneable {
 
     private static final long serialVersionUID = 1L;
 
@@ -744,6 +898,35 @@ public class ThrowablePattern implements Serializable {
       this.pattern = pattern;
       this.indexOfFirstNegativeMatcher = -1;
       this.matchers = new ArrayList<ThrowableListElementThrowableMatcher>();
+    }
+
+    @Override
+    public Throwable getReference(final Object key) {
+      Throwable returnValue = null;
+      if (this.matchers != null && !this.matchers.isEmpty()) {
+        for (final ThrowableListElementThrowableMatcher m : this.matchers) {
+          if (m != null) {
+            final Throwable t = m.getReference(key);
+            if (t != null) {
+              returnValue = t;
+              break;
+            }
+          }
+        }
+      }
+      return returnValue;
+    }
+
+    @Override
+    public final void setThrowable(final Throwable throwableChain) {
+      super.setThrowable(throwableChain);
+      if (this.matchers != null && !this.matchers.isEmpty()) {
+        for (final ThrowableListElementThrowableMatcher m : this.matchers) {
+          if (m != null) {
+            m.setThrowable(throwableChain);
+          }
+        }
+      }
     }
 
     @Override
@@ -775,13 +958,15 @@ public class ThrowablePattern implements Serializable {
     }
 
     @Override
-    public final boolean matches(final Throwable t) throws ThrowableMatcherException {
+    public final boolean matches() throws ThrowableMatcherException {
       boolean returnValue = false;
-      for (final ThrowableMatcher p : this.matchers) {
-        returnValue = true;
-        if (p == null || !p.matches(t)) {
-          returnValue = false;
-          break;
+      if (this.matchers != null && !this.matchers.isEmpty()) {
+        for (final ThrowableMatcher matcher : this.matchers) {
+          returnValue = true;
+          if (matcher == null || !matcher.matches()) {
+            returnValue = false;
+            break;
+          }
         }
       }
       return returnValue;
@@ -807,7 +992,7 @@ public class ThrowablePattern implements Serializable {
    *
    * @author <a href="mailto:ljnelson@gmail.com">Laird Nelson</a>
    */
-  private static final class InstanceOfThrowableMatcher implements ThrowableMatcher {
+  private static final class InstanceOfThrowableMatcher extends AbstractThrowableMatcher {
 
     /**
      * The version number of the serialized representation of this
@@ -835,22 +1020,9 @@ public class ThrowablePattern implements Serializable {
       this.cls = cls;
     }
 
-    /**
-     * Returns {@code true} if the supplied {@link Throwable} is an
-     * instance of the {@link Class} supplied to this {@link
-     * InstanceOfThrowableMatcher}'s {@linkplain
-     * #Throwables.InstanceOfThrowableMatcher(Class) constructor}.
-     *
-     * @param t the {@link Throwable} to test; may be {@code null}
-     *
-     * @return {@code true} if the supplied {@link Throwable} is an
-     * instance of the {@link Class} supplied to this {@link
-     * InstanceOfThrowableMatcher}'s {@linkplain
-     * #Throwables.InstanceOfThrowableMatcher(Class) constructor}; {@code
-     * false} in all other cases
-     */
     @Override
-    public final boolean matches(final Throwable t) {
+    public final boolean matches() {
+      final Throwable t = this.getThrowable();
       return t != null && this.cls != null && this.cls.isInstance(t);
     }
 
@@ -882,8 +1054,10 @@ public class ThrowablePattern implements Serializable {
     private final StringBuilder classNameBuffer;
 
     private final StringBuilder commentBuffer;
-    
+
     private final StringBuilder propertyBlockBuffer;
+
+    private final StringBuilder referenceBuffer;
 
     private boolean greedyGlob;
 
@@ -914,6 +1088,7 @@ public class ThrowablePattern implements Serializable {
       this.classNameBuffer = new StringBuilder();
       this.commentBuffer = new StringBuilder();
       this.propertyBlockBuffer = new StringBuilder();
+      this.referenceBuffer = new StringBuilder();
       this.matchers = new ConjunctiveThrowableMatcher(pattern);
     }
 

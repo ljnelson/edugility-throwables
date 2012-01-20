@@ -3,7 +3,7 @@ java.lang.RuntimeException.../java.lang.IllegalStateException(message == "hello"
 --
 com.edugility.throwables.Bundle#noDice
 
-java.sql.SQLException/**/java.lang.Exception
+java.sql.SQLException[1]/**/java.lang.Exception
 --
 A key
 goes here

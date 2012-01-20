@@ -43,20 +43,11 @@ import java.io.Serializable;
  */
 public interface ThrowableMatcher extends Serializable {
 
-  /**
-   * Returns {@code true} if the supplied {@link Throwable} is
-   * accepted or matched in some way.  The supplied {@link Throwable}
-   * may be {@code null}.
-   *
-   * @param t the {@link Throwable} to match; may be {@code null}
-   *
-   * @return {@code true} if and only if the supplied {@link
-   * Throwable} matches; {@code false} otherwise
-   *
-   * @exception ThrowableMatcherException if there was a problem
-   * determining a return value
-   */
-  public boolean matches(final Throwable t) throws ThrowableMatcherException;
+  public boolean matches() throws ThrowableMatcherException;
+
+  public void setThrowable(final Throwable throwable);
+
+  public Throwable getThrowable();
 
   /**
    * Returns the {@link String} form of the notional pattern that was
@@ -67,5 +58,7 @@ public interface ThrowableMatcher extends Serializable {
    * used to construct this {@link ThrowableMatcher}, or {@code null}
    */
   public String getPattern();
+
+  public Throwable getReference(final Object key);
 
 }

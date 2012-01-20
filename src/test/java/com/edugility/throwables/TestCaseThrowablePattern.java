@@ -36,7 +36,6 @@ import java.util.List;
 
 import javax.naming.NamingException;
 
-import org.junit.Before;
 import org.junit.Test;
 
 import static org.junit.Assert.*;
@@ -56,127 +55,148 @@ import static org.junit.Assert.*;
 public class TestCaseThrowablePattern {
 
   /**
-   * The {@link ThrowablePattern} being tested.  This field is
-   * automatically initialized by <a
-   * href="http://www.junit.org/">JUnit</a> when any of the methods
-   * annotated with {@code @}{@link Test} in this class is called by
-   * the JUnit framework.
-   *
-   * @see #setUp()
-   */
-  protected ThrowablePattern pattern;
-
-  /**
    * Creates a new {@link TestCaseThrowablePattern}.
    */
   public TestCaseThrowablePattern() {
     super();
   }
 
-  /**
-   * Creates a new {@link ThrowablePattern} and initializes it for
-   * testing.
-   *
-   * @exception Exception if an error occurs
-   */
-  @Before
-  public void setUp() throws Exception {
-    this.pattern = new ThrowablePattern();
+  @Test
+  public void testReferences() throws Exception {
+    final String s = "java.lang.Exception/java.lang.IllegalStateException[1]/java.lang.RuntimeException";
+    final ThrowablePattern pattern = ThrowablePattern.compile(s);
+    assertNotNull(pattern);
+
+    final RuntimeException re = new RuntimeException("bottom");
+    final IllegalStateException ise = new IllegalStateException("middle", re);
+    final Exception e = new Exception("top", ise);
+
+    final ThrowableMatcher matcher = pattern.matcher(e);
+    assertNotNull(matcher);
+    final Throwable ref = matcher.getReference(Integer.valueOf(1));
+    assertSame(ref, ise);
   }
 
   @Test
   public void testLeadingSlashAnchoredAtEndOnly() throws Exception {
     final String s = "/**/java.lang.RuntimeException";
-    final ThrowableMatcher p = this.pattern.newThrowableMatcher(s);
+    final ThrowablePattern pattern = ThrowablePattern.compile(s);
+    assertNotNull(pattern);
     final RuntimeException last = new RuntimeException();
     final NamingException ne = (NamingException)new NamingException().initCause(last);
     final Exception first = new Exception(ne);
-    assertNotNull(p);
-    assertTrue(p.matches(first));
-    assertTrue(p.matches(ne));
-    assertTrue(p.matches(last));
+
+    final Throwable[] throwables = new Throwable[] { first, ne, last };
+    for (final Throwable t : throwables) {
+      final ThrowableMatcher m = pattern.matcher(t);
+      assertNotNull(m);
+      assertTrue(m.matches());
+    }
   }
 
   @Test
   public void testAnchoredAtEndOnly() throws Exception {
     final String s = "**/java.lang.RuntimeException";
-    final ThrowableMatcher p = this.pattern.newThrowableMatcher(s);
+    final ThrowablePattern pattern = ThrowablePattern.compile(s);
+    assertNotNull(pattern);
     final RuntimeException last = new RuntimeException();
     final NamingException ne = (NamingException)new NamingException().initCause(last);
     final Exception first = new Exception(ne);
-    assertNotNull(p);
-    assertTrue(p.matches(first));
-    assertTrue(p.matches(ne));
-    assertTrue(p.matches(last));
+
+    final Throwable[] throwables = new Throwable[] { first, ne, last };
+    for (final Throwable t : throwables) {
+      final ThrowableMatcher m = pattern.matcher(t);
+      assertNotNull(m);
+      assertTrue(m.matches());
+    }
   }
 
   @Test
   public void testGreedyGlob() throws Exception {
     final String s = "java.io.FileNotFoundException.../**/java.io.IOException/java.lang.RuntimeException...";
-    final ThrowableMatcher p = this.pattern.newThrowableMatcher(s);
-    assertNotNull(p);
+    final ThrowablePattern pattern = ThrowablePattern.compile(s);
+    assertNotNull(pattern);
+
     final RuntimeException last = new IllegalArgumentException();
     final IOException nextToLast = new IOException(last);
     final IllegalStateException nextToNextToLast = new IllegalStateException(nextToLast);
     final FileNotFoundException first = (FileNotFoundException)new FileNotFoundException().initCause(nextToNextToLast);
-    
+
+    final ThrowableMatcher matcher = pattern.matcher(first);
+    assertNotNull(matcher);
+    assertTrue(matcher.matches());
+
     final List<Throwable> list = Throwables.toList(first);
     assertNotNull(list);
-    
-    assertTrue(p.matches(first));
   }
 
   @Test
   public void testStringWithComments() throws Exception {
     final String s = "java.sql.SQLException.../**/java.lang.Exception...(message==\"fred\") # This is a comment";
-    final ThrowableMatcher p = this.pattern.newThrowableMatcher(s);
-    assertNotNull(p);
+    final ThrowablePattern pattern = ThrowablePattern.compile(s);
+    assertNotNull(pattern);
+
     final Exception e = new Exception("fred");
     final RuntimeException penultimate = new RuntimeException(e);
     final NamingException namingException = (NamingException)new NamingException().initCause(penultimate);
     final SQLException exception = new SQLException(namingException);
+
     assertSame(e, penultimate.getCause());
     assertSame(penultimate, namingException.getCause());
     assertSame(namingException, exception.getCause());
-    assertTrue(p.matches(exception));
+
+    final ThrowableMatcher p = pattern.matcher(exception);
+    assertNotNull(p);
+    assertTrue(p.matches());
   }
 
   @Test
   public void testEdgeCase1() throws Exception {
     final String s = "java.sql.SQLException /  java.lang.IllegalStateException";
-    final ThrowableMatcher p = this.pattern.newThrowableMatcher(s);
-    assertNotNull(p);
+    final ThrowablePattern pattern = ThrowablePattern.compile(s);
+    assertNotNull(pattern);
     final IllegalStateException ise = new IllegalStateException();
     final SQLException sqlException = new SQLException(ise);
-    assertTrue(p.matches(sqlException));
+    final ThrowableMatcher matcher = pattern.matcher(sqlException);
+    assertNotNull(matcher);
+    assertTrue(matcher.matches());
   }
 
   @Test
   public void testGlobWithWhitespace() throws Exception {
     final String s = "java.lang.NullPointerException/   * /javax.naming.NamingException";
-    final ThrowableMatcher p = this.pattern.newThrowableMatcher(s);
-    assertNotNull(p);
+    final ThrowablePattern pattern = ThrowablePattern.compile(s);
+    assertNotNull(pattern);
     final NamingException ne = new NamingException();
     final IllegalStateException ise = new IllegalStateException(ne);
     final NullPointerException npe = (NullPointerException)new NullPointerException().initCause(ise);
+
     assertSame(ise, npe.getCause());
     assertSame(ne, ise.getCause());
-    assertTrue(p.matches(npe));
+
+    final ThrowableMatcher matcher = pattern.matcher(npe);
+    assertNotNull(matcher);
+    assertTrue(matcher.matches());
   }
 
   @Test
   public void testSimpleClassNameEquality() throws Exception {
-    final Throwable t = new NullPointerException();
-    final ThrowableMatcher p = this.pattern.newThrowableMatcher("java.lang.NullPointerException");
-    assertNotNull(p);
-    assertTrue(p.matches(t));
+    final String s = "java.lang.NullPointerException";
+    final ThrowablePattern pattern = ThrowablePattern.compile(s);
+    assertNotNull(pattern);
+    final ThrowableMatcher matcher = pattern.matcher(new NullPointerException());
+    assertNotNull(matcher);
+    assertTrue(matcher.matches());
   }
 
   @Test
   public void testSimplePropertyBlock() throws Exception {
-    final ThrowableMatcher p = this.pattern.newThrowableMatcher("java.lang.NullPointerException( message == \"fred\" )");
-    assertNotNull(p);
-    assertTrue(p.matches(new NullPointerException("fred")));
+    final String s = "java.lang.NullPointerException( message == \"fred\" )";
+    final ThrowablePattern pattern = ThrowablePattern.compile(s);
+    assertNotNull(pattern);
+    final ThrowableMatcher matcher = pattern.matcher(new NullPointerException("fred"));
+    assertNotNull(matcher);
+    assertTrue(matcher.matches());
   }
 
 }

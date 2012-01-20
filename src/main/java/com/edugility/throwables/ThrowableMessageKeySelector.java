@@ -50,13 +50,18 @@ import java.util.logging.Logger;
 
 public class ThrowableMessageKeySelector implements Serializable {
 
+  /*
+   * TODO: this class really should be storing a map of
+   * Strings-to-Throwable*Patterns*.
+   */
+
   private static final long serialVersionUID = 1L;
 
   protected static final String LS = System.getProperty("line.separator", "\n");
 
   protected transient Logger logger;
 
-  private final Map<String, Set<ThrowableMatcher>> matchers;
+  private final Map<String, Set<ThrowablePattern>> patterns;
 
   public ThrowableMessageKeySelector() {
     super();
@@ -65,7 +70,7 @@ public class ThrowableMessageKeySelector implements Serializable {
       this.logger = this.defaultCreateLogger();
     }
     assert this.logger != null;
-    this.matchers = new LinkedHashMap<String, Set<ThrowableMatcher>>();
+    this.patterns = new LinkedHashMap<String, Set<ThrowablePattern>>();
   }
 
   protected Logger createLogger() {
@@ -98,90 +103,87 @@ public class ThrowableMessageKeySelector implements Serializable {
     return logger;
   }
 
-  public final void putPattern(final String pattern, final String key) throws ClassNotFoundException, IOException, ThrowableMatcherException {
+  public final void putPattern(final String pattern, final String key) throws ClassNotFoundException, IOException {
     this.putPatterns(Collections.singleton(pattern), key);
   }
 
-  public final void putPatterns(final Iterable<String> patterns, final String key) throws ClassNotFoundException, IOException, ThrowableMatcherException {
+  public final void putPatterns(final Iterable<String> patterns, final String key) throws ClassNotFoundException, IOException {
     if (key != null && patterns != null) {
-      this.put(patternsToMatchers(patterns), key);
+      this.put(stringsToPatterns(patterns), key);
     }
   }
 
-  public final void put(final ThrowableMatcher matcher, final String key) throws ClassNotFoundException, IOException, ThrowableMatcherException {
-    this.put(Collections.singleton(matcher), key);
+  public final void put(final ThrowablePattern pattern, final String key) throws ClassNotFoundException, IOException, ThrowableMatcherException {
+    this.put(Collections.singleton(pattern), key);
   }
 
-  public void put(final Iterable<ThrowableMatcher> matchers, final String key) {
-    if (key != null && matchers != null) {
-      final Iterator<ThrowableMatcher> iterator = matchers.iterator();
+  public void put(final Iterable<ThrowablePattern> patterns, final String key) {
+    if (key != null && patterns != null) {
+      final Iterator<ThrowablePattern> iterator = patterns.iterator();
       if (iterator != null && iterator.hasNext()) {
-        final Set<ThrowableMatcher> storedMatchers = new LinkedHashSet<ThrowableMatcher>();
+        final Set<ThrowablePattern> storedPatterns = new LinkedHashSet<ThrowablePattern>();
         while (iterator.hasNext()) {
-          final ThrowableMatcher matcher = iterator.next();
-          if (matcher != null) {
-            storedMatchers.add(matcher);
+          final ThrowablePattern pattern = iterator.next();
+          if (pattern != null) {
+            storedPatterns.add(pattern);
           }
         }
-        this.matchers.put(key, storedMatchers);
+        this.patterns.put(key, storedPatterns);
       }
     }
   }
 
-  public static final Iterable<ThrowableMatcher> patternsToMatchers(final Iterable<String> patterns) throws ClassNotFoundException, IOException, ThrowableMatcherException {
-    Iterable<ThrowableMatcher> returnValue = null;
-    if (patterns != null) {
-      final Iterator<String> iterator = patterns.iterator();
+  public static final Iterable<ThrowablePattern> stringsToPatterns(final Iterable<String> stringPatterns) throws ClassNotFoundException, IOException {
+    Iterable<ThrowablePattern> returnValue = null;
+    if (stringPatterns != null) {
+      final Iterator<String> iterator = stringPatterns.iterator();
       if (iterator != null && iterator.hasNext()) {
-        final ThrowablePattern throwablePattern = new ThrowablePattern();
-        final Set<ThrowableMatcher> matchers = new LinkedHashSet<ThrowableMatcher>();
+        // final ThrowablePattern throwablePattern = new ThrowablePattern();
+        final Set<ThrowablePattern> patterns = new LinkedHashSet<ThrowablePattern>();
         while (iterator.hasNext()) {
-          final String pattern = iterator.next();
-          if (pattern != null) {
-            final ThrowableMatcher matcher = throwablePattern.newThrowableMatcher(pattern);
-            if (matcher != null) {
-              matchers.add(matcher);
-            }
+          final String patternString = iterator.next();
+          if (patternString != null) {
+            patterns.add(ThrowablePattern.compile(patternString));
           }
         }
-        if (!matchers.isEmpty()) {
-          returnValue = matchers;
+        if (!patterns.isEmpty()) {
+          returnValue = patterns;
         }
       }
     }
     if (returnValue == null) {
-      returnValue = Collections.<ThrowableMatcher>emptySet();
+      returnValue = Collections.<ThrowablePattern>emptySet();
     }
     return returnValue;
   }
-
-  public final void addPattern(final String pattern, final String key) throws ClassNotFoundException, IOException, ThrowableMatcherException {
+    
+  public final void addPattern(final String pattern, final String key) throws ClassNotFoundException, IOException {
     this.addPatterns(Collections.singleton(pattern), key);
   }
 
-  public final void addPatterns(final Iterable<String> patterns, final String key) throws ClassNotFoundException, IOException, ThrowableMatcherException {
+  public final void addPatterns(final Iterable<String> patterns, final String key) throws ClassNotFoundException, IOException {
     if (key != null && patterns != null) {
-      this.add(patternsToMatchers(patterns), key);
+      this.add(stringsToPatterns(patterns), key);
     }
   }
 
-  public final void add(final ThrowableMatcher matcher, final String key) {
-    this.add(Collections.singleton(matcher), key);
+  public final void add(final ThrowablePattern pattern, final String key) {
+    this.add(Collections.singleton(pattern), key);
   }
 
-  public void add(final Iterable<ThrowableMatcher> matchers, final String key) {
-    if (key != null && matchers != null) {
-      final Iterator<ThrowableMatcher> iterator = matchers.iterator();
+  public final void add(final Iterable<ThrowablePattern> patterns, final String key) {
+    if (key != null && patterns != null) {
+      final Iterator<ThrowablePattern> iterator = patterns.iterator();
       if (iterator != null && iterator.hasNext()) {
-        Set<ThrowableMatcher> storedMatchers = this.matchers.get(key);
-        if (storedMatchers == null) {
-          storedMatchers = new LinkedHashSet<ThrowableMatcher>();
-          this.matchers.put(key, storedMatchers);
+        Set<ThrowablePattern> storedPatterns = this.patterns.get(key);
+        if (storedPatterns == null) {
+          storedPatterns = new LinkedHashSet<ThrowablePattern>();
+          this.patterns.put(key, storedPatterns);
         }
         while (iterator.hasNext()) {
-          final ThrowableMatcher matcher = iterator.next();
-          if (matcher != null) {
-            storedMatchers.add(matcher);
+          final ThrowablePattern pattern = iterator.next();
+          if (pattern != null) {
+            storedPatterns.add(pattern);
           }
         }
       }
@@ -189,22 +191,22 @@ public class ThrowableMessageKeySelector implements Serializable {
   }
 
   public void remove(final String key) {
-    if (key != null && !this.matchers.isEmpty()) {
-      this.matchers.remove(key);
+    if (key != null && !this.patterns.isEmpty()) {
+      this.patterns.remove(key);
     }
   }
 
-  public final void remove(final String key, final ThrowableMatcher matcher) {
-    this.remove(key, Collections.singleton(matcher));
+  public final void remove(final String key, final ThrowablePattern pattern) {
+    this.remove(key, Collections.singleton(pattern));
   }
 
-  public void remove(final String key, final Iterable<ThrowableMatcher> matchers) {
-    if (key != null && matchers != null && !this.matchers.isEmpty()) {
-      final Set<ThrowableMatcher> storedMatchers = this.matchers.get(key);
-      if (storedMatchers != null && !storedMatchers.isEmpty()) {
-        for (final ThrowableMatcher matcher : matchers) {
-          if (matcher != null) {
-            storedMatchers.remove(matcher);
+  public void remove(final String key, final Iterable<ThrowablePattern> patterns) {
+    if (key != null && patterns != null && !this.patterns.isEmpty()) {
+      final Set<ThrowablePattern> storedPatterns = this.patterns.get(key);
+      if (storedPatterns != null && !storedPatterns.isEmpty()) {
+        for (final ThrowablePattern pattern : patterns) {
+          if (pattern != null) {
+            storedPatterns.remove(pattern);
           }
         }
       }
@@ -217,20 +219,23 @@ public class ThrowableMessageKeySelector implements Serializable {
 
   public String getKey(final Throwable chain, final String defaultValue) throws ThrowableMatcherException {
     String returnValue = defaultValue;
-    if (this.matchers != null && !this.matchers.isEmpty()) {
-      final Set<Entry<String, Set<ThrowableMatcher>>> entrySet = this.matchers.entrySet();
+    if (this.patterns != null && !this.patterns.isEmpty()) {
+      final Set<Entry<String, Set<ThrowablePattern>>> entrySet = this.patterns.entrySet();
       if (entrySet != null) {
         ENTRY_LOOP:
-        for (final Entry<String, Set<ThrowableMatcher>> entry : entrySet) {
+        for (final Entry<String, Set<ThrowablePattern>> entry : entrySet) {
           if (entry != null) {
             final String messageKey = entry.getKey();
             if (messageKey != null) {
-              final Iterable<ThrowableMatcher> matchers = entry.getValue();
-              if (matchers != null) {
-                for (final ThrowableMatcher matcher : matchers) {
-                  if (matcher != null && matcher.matches(chain)) {
-                    returnValue = messageKey;
-                    break ENTRY_LOOP;
+              final Iterable<ThrowablePattern> patterns = entry.getValue();
+              if (patterns != null) {
+                for (final ThrowablePattern pattern : patterns) {
+                  if (pattern != null) {
+                    final ThrowableMatcher matcher = pattern.matcher(chain);
+                    if (matcher != null && matcher.matches()) {
+                      returnValue = messageKey;
+                      break ENTRY_LOOP;
+                    }
                   }
                 }
               }
