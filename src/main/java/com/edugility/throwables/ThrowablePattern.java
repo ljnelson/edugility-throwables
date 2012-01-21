@@ -37,7 +37,10 @@ import java.nio.CharBuffer;
 import java.sql.SQLException; // for javadoc only
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.mvel2.MVEL;
 
@@ -48,11 +51,11 @@ import org.mvel2.MVEL;
  *
  * @see ThrowableMatcher
  *
- * @see #newThrowableMatcher(String)
+ * @see #compile(String)
  *
  * @since 1.2-SNAPSHOT
  */
-public class ThrowablePattern implements Serializable {
+public final class ThrowablePattern implements Serializable {
 
   private static final long serialVersionUID = 1L;
 
@@ -72,15 +75,6 @@ public class ThrowablePattern implements Serializable {
     IDENTIFIER,
     REFERENCE,
     PROPERTY_BLOCK
-  }
-
-  /**
-   * Creates a new {@link ThrowablePattern}.
-   */
-  @Deprecated
-  public ThrowablePattern() {
-    super();
-    this.matcher = null;
   }
 
   private ThrowablePattern(final ConjunctiveThrowableMatcher matcher) {
@@ -208,7 +202,18 @@ public class ThrowablePattern implements Serializable {
     parsingState.leftAnchor = true;
   }
 
-  public ThrowableMatcher matcher(final Throwable throwableChain) {
+  /**
+   * Returns a {@link ThrowableMatcher} suitable for testing the
+   * supplied {@link Throwable} chain.
+   *
+   * <p>This method never returns {@code null}.</p>
+   *
+   * @param throwableChain the {@link Throwable} to be tested; may be
+   * {@code null} (rather uselessly)
+   *
+   * @return a {@link ThrowableMatcher}; never {@code null}
+   */
+  public final ThrowableMatcher matcher(final Throwable throwableChain) {
     final ConjunctiveThrowableMatcher result = this.matcher.clone();
     assert result != null;
     result.setThrowable(throwableChain);
@@ -217,7 +222,7 @@ public class ThrowablePattern implements Serializable {
 
   /**
    * Compiles the supplied pattern into a new {@link
-   * ThrowableMatcher}.  This method never returns {@code null}.
+   * ThrowablePattern}.  This method never returns {@code null}.
    *
    * <p>The supplied pattern must conform to the following (currently
    * informal) grammar:</p>
@@ -232,15 +237,19 @@ public class ThrowablePattern implements Serializable {
    *
    * PatternBody = ClassTest ( '<b>/</b>' ( GreedyGlob | ClassTest ) )*
    *
-   * ClassTest = ( ClassName Ellipsis? PropertyBlock? ) | Glob
+   * ClassTest = ( ClassName Ellipsis? PropertyBlock? Reference? ) | Glob
    *
    * Glob = '<b>*</b>'
    *
    * PropertyBlock = '<b>(</b>' <i><a href="http://mvel.codehaus.org/">MVEL</a> expression</i> '<b>)</b>'
    *
+   * Reference = '<b>[</b>' ReferenceKey '<b>]</b>'
+   *
    * Ellipsis = '<b>\u2026</b>' | '<b>...</b>'
    *
    * ClassName = <i>Fully qualified Java class name</i>
+   *
+   * ReferenceKey = <i>Java literal or {@link String}</i>
    *
    * </pre>
    *
@@ -278,6 +287,8 @@ public class ThrowablePattern implements Serializable {
    *
    * @param pattern the pattern to parse; must not be {@code null}
    *
+   * @return a new {@link ThrowablePattern}; never {@code null}
+   *
    * @exception IllegalArgumentException if {@code pattern} is {@code
    * null}
    *
@@ -288,24 +299,7 @@ public class ThrowablePattern implements Serializable {
    * @exception IOException if {@linkplain StringReader#read()
    * reading of the supplied <tt>String</tt>} fails for some obscure
    * reason
-   *
-   * @deprecated Under construction; see the {@code compile(String)}
-   * method instead.
    */
-  @Deprecated
-  public final ThrowableMatcher newThrowableMatcher(final String pattern) throws ClassNotFoundException, IOException {
-    if (pattern == null) {
-      throw new IllegalArgumentException("pattern", new NullPointerException("pattern == null"));
-    }
-    final ThrowablePattern dummy = compile(pattern, Thread.currentThread().getContextClassLoader());
-    assert dummy != null;
-    return dummy.matcher;
-  }
-
-  public static final ThrowablePattern compile(final String pattern) throws ClassNotFoundException, IOException {
-    return compile(pattern, Thread.currentThread().getContextClassLoader());
-  }
-
   public static final ThrowablePattern compile(final String pattern, ClassLoader loader) throws ClassNotFoundException, IOException {
 
     if (loader == null) {
@@ -389,6 +383,11 @@ public class ThrowablePattern implements Serializable {
 
         case '/':
           slash(parsingState);
+          break;
+
+        case '[':
+          parsingState.state = State.REFERENCE;
+          referenceStart(parsingState);
           break;
 
         default:
@@ -530,16 +529,16 @@ public class ThrowablePattern implements Serializable {
           subclassTest(parsingState, loader);
           break;
 
+        case '[':
+          parsingState.state = State.REFERENCE;
+          referenceStart(parsingState);
+          break;
+
         case '/':
           identifierEnd(parsingState);
           classNameMatchTest(parsingState);
           slash(parsingState);
           parsingState.state = State.NORMAL;
-          break;
-
-        case '[':
-          parsingState.state = State.REFERENCE;
-          referenceStart(parsingState);
           break;
 
         case '(':
@@ -597,6 +596,11 @@ public class ThrowablePattern implements Serializable {
         case '(':
           parsingState.state = State.PROPERTY_BLOCK;
           propertyBlockStart(parsingState);
+          break;
+
+        case '[':
+          parsingState.state = State.REFERENCE;
+          referenceStart(parsingState);
           break;
 
         case '#':
@@ -659,6 +663,33 @@ public class ThrowablePattern implements Serializable {
     return new ThrowablePattern(matcher);
   }
 
+  /**
+   * Calls the {@link #compile(String, ClassLoader)} method, passing
+   * it the supplied {@code pattern} and the return value of {@link
+   * Thread#getContextClassLoader()
+   * Thread.currentThread().getContextClassLoader()}, and returns its
+   * return value.
+   *
+   * @param pattern a {@link String} representation of the pattern to
+   * be compiled; must not be {@code null}
+   *
+   * @return a new {@link ThrowablePattern}; never {@code null}
+   *
+   * @exception IllegalArgumentException if {@code pattern} is {@code
+   * null}
+   *
+   * @exception ClassNotFoundException if the supplied {@code pattern}
+   * contains a segment that will result in the attempted loading of a
+   * {@link Class}, and if that class loading operation fails
+   *
+   * @exception IOException if {@linkplain StringReader#read()
+   * reading of the supplied <tt>String</tt>} fails for some obscure
+   * reason
+   */
+  public static final ThrowablePattern compile(final String pattern) throws ClassNotFoundException, IOException {
+    return compile(pattern, Thread.currentThread().getContextClassLoader());
+  }
+
   private static final String buildIllegalStateExceptionMessage(final ParsingState state) {
     return buildIllegalStateExceptionMessage(state.pattern, state.position, state.state);
   }
@@ -680,29 +711,93 @@ public class ThrowablePattern implements Serializable {
     return sb.toString();
   }
 
-  private static abstract class AbstractThrowableMatcher implements ThrowableMatcher {
+  /**
+   * A partial, deliberately na&iuml;ve implementation of the {@link
+   * ThrowableMatcher} interface. This class is {@code protected} only
+   * so that it is visible to templating tools such as <a
+   * href="http://mvel.codehaus.org/">MVEL</a>.
+   *
+   * @author <a href="mailto:ljnelson@gmail.com">Laird Nelson</a>
+   *
+   * @since 1.2-SNAPSHOT
+   *
+   * @see ThrowableMatcher
+   */
+  protected static abstract class AbstractThrowableMatcher implements ThrowableMatcher {
 
+    /**
+     * The version of this class used by the Java serialization
+     * mechanism.
+     */
     private static final long serialVersionUID = 1L;
 
+    /**
+     * The {@link Throwable} chain being matched.  This field may be
+     * {@code null}.
+     */
     private Throwable throwableChain;
 
+    /**
+     * Creates a new {@link AbstractThrowableMatcher}.
+     */
     protected AbstractThrowableMatcher() {
       super();
     }
 
+    /**
+     * Sets the {@link Throwable} to be tested.
+     *
+     * @param throwableChain the {@link Throwable} chain to match; may
+     * be {@code null}
+     */
     @Override
     public void setThrowable(final Throwable throwableChain) {
       this.throwableChain = throwableChain;
     }
 
+    /**
+     * Returns the {@link Throwable} to be tested.  This method may
+     * return {@code null}.
+     *
+     * @return the {@link Throwable} to be tested, or {@code null}
+     */
     @Override
     public Throwable getThrowable() {
       return this.throwableChain;
     }
 
+    /**
+     * Returns {@code null} when invoked.  Subclasses wishing to store
+     * references should override this method.
+     *
+     * @param key the {@link Object} under which a reference to a
+     * {@link Throwable} is expected to be found; may be {@code null};
+     * effectively ignored by this implementation
+     *
+     * @return {@code null} when invoked
+     */
     @Override
     public Throwable getReference(final Object key) {
       return null;
+    }
+
+    /**
+     * Returns the return value of {@link Collections#emptySet()} when
+     * invoked.  Subclasses whiching to store references should
+     * override this method to return all known keys under which
+     * {@link Throwable}s may be located via the {@link
+     * #getReference(Object)} method.
+     *
+     * <p>Subclass implementations of this method may return {@code
+     * null}.</p>
+     *
+     * @return {@link Collections#emptySet()} when invoked; subclasses
+     * may override this implementation to return something else,
+     * including {@code null}
+     */
+    @Override
+    public Iterable<Object> getReferenceKeys() {
+      return Collections.emptySet();
     }
 
   }
@@ -719,7 +814,7 @@ public class ThrowablePattern implements Serializable {
     }
 
     @Override
-    public String getPattern() {
+    public final String getPattern() {
       return "[" + this.key + "]";
     }
 
@@ -729,17 +824,23 @@ public class ThrowablePattern implements Serializable {
     }
 
     @Override
-    public Throwable getReference(final Object key) {
-      if (key == null) {
-        if (this.key == null) {
-          return this.getThrowable();
-        }
-      } else if (key.equals(this.key)) {
+    public final Throwable getReference(final Object key) {
+      if ((key == null && this.key == null) || key.equals(this.key)) {
         return this.getThrowable();
+      } else {
+        return null;
       }
-      return null;
     }
 
+    @Override
+    public final Iterable<Object> getReferenceKeys() {
+      if (this.key == null) {
+        return Collections.emptySet();
+      } else {
+        return Collections.singleton(this.key);
+      }
+    }
+    
   }
 
   private static final class ThrowableListElementThrowableMatcher extends AbstractThrowableMatcher {
@@ -757,7 +858,7 @@ public class ThrowablePattern implements Serializable {
     }
 
     @Override
-    public void setThrowable(Throwable t) {
+    public final void setThrowable(Throwable t) {
       final List<Throwable> list = toList(t);
       assert list != null;
       final int index;
@@ -778,7 +879,7 @@ public class ThrowablePattern implements Serializable {
     }
 
     @Override
-    public Throwable getThrowable() {
+    public final Throwable getThrowable() {
       Throwable t = null;
       if (this.delegate != null) {
         t = this.delegate.getThrowable();
@@ -787,12 +888,24 @@ public class ThrowablePattern implements Serializable {
     }
 
     @Override
-    public Throwable getReference(final Object key) {
+    public final Throwable getReference(final Object key) {
       Throwable t = null;
       if (this.delegate != null) {
         t = this.delegate.getReference(key);
       }
       return t;
+    }
+
+    @Override
+    public final Iterable<Object> getReferenceKeys() {
+      Iterable<Object> returnValue = null;
+      if (this.delegate != null) {
+        returnValue = this.delegate.getReferenceKeys();
+      }
+      if (returnValue == null) {
+        returnValue = Collections.emptySet();
+      }
+      return returnValue;
     }
 
     private static final List<Throwable> toList(Throwable t) {
@@ -901,10 +1014,10 @@ public class ThrowablePattern implements Serializable {
     }
 
     @Override
-    public Throwable getReference(final Object key) {
+    public final Throwable getReference(final Object key) {
       Throwable returnValue = null;
       if (this.matchers != null && !this.matchers.isEmpty()) {
-        for (final ThrowableListElementThrowableMatcher m : this.matchers) {
+        for (final ThrowableMatcher m : this.matchers) {
           if (m != null) {
             final Throwable t = m.getReference(key);
             if (t != null) {
@@ -913,6 +1026,30 @@ public class ThrowablePattern implements Serializable {
             }
           }
         }
+      }
+      return returnValue;
+    }
+
+    @Override
+    public final Iterable<Object> getReferenceKeys() {
+      Set<Object> returnValue = null;
+      if (this.matchers != null && !this.matchers.isEmpty()) {
+        returnValue = new LinkedHashSet<Object>();
+        for (final ThrowableMatcher m : this.matchers) {
+          if (m != null) {
+            final Iterable<Object> keys = m.getReferenceKeys();
+            if (keys != null) {
+              for (final Object key : keys) {
+                if (key != null) {
+                  returnValue.add(key);
+                }
+              }
+            }
+          }
+        }
+      }
+      if (returnValue == null) {
+        returnValue = Collections.emptySet();
       }
       return returnValue;
     }

@@ -50,11 +50,6 @@ import java.util.logging.Logger;
 
 public class ThrowableMessageKeySelector implements Serializable {
 
-  /*
-   * TODO: this class really should be storing a map of
-   * Strings-to-Throwable*Patterns*.
-   */
-
   private static final long serialVersionUID = 1L;
 
   protected static final String LS = System.getProperty("line.separator", "\n");
@@ -218,7 +213,19 @@ public class ThrowableMessageKeySelector implements Serializable {
   }
 
   public String getKey(final Throwable chain, final String defaultValue) throws ThrowableMatcherException {
-    String returnValue = defaultValue;
+    String returnValue = null;
+    final Match match = this.getMatch(chain);
+    if (match != null) {
+      returnValue = match.messageKey;
+    }
+    if (returnValue == null) {
+      returnValue = defaultValue;
+    }
+    return returnValue;
+  }
+
+  protected final Match getMatch(final Throwable chain) throws ThrowableMatcherException {
+    Match returnValue = null;
     if (this.patterns != null && !this.patterns.isEmpty()) {
       final Set<Entry<String, Set<ThrowablePattern>>> entrySet = this.patterns.entrySet();
       if (entrySet != null) {
@@ -233,7 +240,7 @@ public class ThrowableMessageKeySelector implements Serializable {
                   if (pattern != null) {
                     final ThrowableMatcher matcher = pattern.matcher(chain);
                     if (matcher != null && matcher.matches()) {
-                      returnValue = messageKey;
+                      returnValue = new Match(matcher, messageKey);
                       break ENTRY_LOOP;
                     }
                   }
@@ -258,6 +265,31 @@ public class ThrowableMessageKeySelector implements Serializable {
       }
     }
     assert this.logger != null;
+  }
+
+  protected static final class Match implements Serializable {
+    
+    private static final long serialVersionUID = 1L;
+
+    private final ThrowableMatcher matcher;
+
+    private final String messageKey;
+    
+    private Match(final ThrowableMatcher matcher, final String messageKey) {
+      super();
+      this.matcher = matcher;
+      this.messageKey = messageKey;
+    }
+    
+    public final ThrowableMatcher getThrowableMatcher() {
+      return this.matcher;
+    }
+
+    public final String getMessageKey() {
+      return this.messageKey;
+    }
+
+
   }
 
 }

@@ -62,7 +62,7 @@ public class TestCaseThrowablePattern {
   }
 
   @Test
-  public void testReferences() throws Exception {
+  public void testNumericReferences() throws Exception {
     final String s = "java.lang.Exception/java.lang.IllegalStateException[1]/java.lang.RuntimeException";
     final ThrowablePattern pattern = ThrowablePattern.compile(s);
     assertNotNull(pattern);
@@ -75,6 +75,24 @@ public class TestCaseThrowablePattern {
     assertNotNull(matcher);
     final Throwable ref = matcher.getReference(Integer.valueOf(1));
     assertSame(ref, ise);
+  }
+
+  @Test
+  public void testNamedReferences() throws Exception {
+    final String s = "java.lang.Exception/java.lang.IllegalStateException[splat]/java.lang.RuntimeException";
+    final ThrowablePattern pattern = ThrowablePattern.compile(s);
+    assertNotNull(pattern);
+
+    final RuntimeException re = new RuntimeException("bottom");
+    final IllegalStateException ise = new IllegalStateException("middle", re);
+    final Exception e = new Exception("top", ise);
+
+    final ThrowableMatcher matcher = pattern.matcher(e);
+    assertNotNull(matcher);
+    final Throwable ref = matcher.getReference("splat");
+    assertSame(ref, ise);
+
+    
   }
 
   @Test

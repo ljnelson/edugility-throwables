@@ -32,21 +32,51 @@ import java.io.Serializable;
 /**
  * A predicate interface whose implementations can match a {@link
  * Throwable}.  {@link ThrowableMatcher} instances are most commonly
- * returned by the {@link
- * ThrowablePattern#newThrowableMatcher(String)} method.
+ * returned by the {@link ThrowablePattern#matcher(Throwable)} method.
  *
  * @author <a href="mailto:ljnelson@gmail.com">Laird Nelson</a>
  *
- * @see ThrowablePattern#newThrowableMatcher(String)
+ * @see ThrowablePattern#matcher(Throwable)
+ *
+ * @see ThrowablePattern#compile(String)
  *
  * @since 1.2-SNAPSHOT
  */
 public interface ThrowableMatcher extends Serializable {
 
+  /**
+   * Returns {@code true} if this {@link ThrowableMatcher}
+   * implementation's {@linkplain #getThrowable() associated
+   * <tt>Throwable</tt>} matches the conditions represented by this
+   * {@link ThrowableMatcher} in some way.
+   *
+   * @return {@code true} if this {@link ThrowableMatcher} matches its
+   * {@linkplain #getThrowable() associated <tt>Throwable</tt>};
+   * {@code false} otherwise
+   *
+   * @exception ThrowableMatcherException if there was an error in
+   * applying the matching operation
+   */
   public boolean matches() throws ThrowableMatcherException;
 
+  /**
+   * Sets the {@link Throwable} chain to be tested by the {@link
+   * #matches()} method.
+   *
+   * @param throwable the {@link Throwable} to be tested; may be
+   * {@code null}
+   */
   public void setThrowable(final Throwable throwable);
 
+  /**
+   * Returns the {@link Throwable} currently affiliated with this
+   * {@link ThrowableMatcher}.
+   *
+   * <p>This method may return {@code null}.</p>
+   *
+   * @return the {@link Throwable} currently affiliated with this
+   * {@link ThrowableMatcher}, or {@code null}
+   */
   public Throwable getThrowable();
 
   /**
@@ -59,6 +89,30 @@ public interface ThrowableMatcher extends Serializable {
    */
   public String getPattern();
 
+  /**
+   * Returns any reference that was marked in the original {@link
+   * ThrowablePattern} that produced this {@link ThrowableMatcher}.
+   *
+   * <p>Implementations of this method are permitted to return {@code
+   * null}.</p>
+   *
+   * @param key the {@link Object} key under which a {@link Throwable}
+   * reference is expected to be found; may be {@code null} in which
+   * case {@code null} should be returned
+   *
+   * @return the {@link Throwable} stored under the supplied {@link
+   * Object}, or {@code null} if there is no such {@link Throwable}
+   */
   public Throwable getReference(final Object key);
+
+  /**
+   * Returns an {@link Iterable} of all keys known to this {@link
+   * ThrowableMatcher} that can be used as inputs to its {@link
+   * #getReference(Object)} method.  Implementations of this method
+   * must not return {@code null}.
+   *
+   * @return a non-{@code null} {@link Iterable} of known keys
+   */
+  public Iterable<Object> getReferenceKeys();
 
 }

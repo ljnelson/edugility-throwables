@@ -37,6 +37,8 @@ import java.text.MessageFormat;
 
 import java.util.ArrayList;
 import java.util.Formatter;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -47,6 +49,8 @@ import java.util.Set;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import com.edugility.throwables.ThrowableMessageKeySelector.Match;
 
 import org.mvel2.templates.TemplateRuntime;
 
@@ -114,43 +118,46 @@ public class ThrowableMessageFactory extends ThrowableMessageKeySelector {
       locale = Locale.getDefault();
     }
     String message = null;
-    final String messageKey = this.getKey(throwableChain);
-    if (messageKey != null) {
+    final Match match = this.getMatch(throwableChain);
+    if (match != null) {
+      final String messageKey = match.getMessageKey();
+      if (messageKey != null) {
 
-      final ResourceBundle messages;
-      final String bundleKey;
-
-      final int poundIndex = messageKey.indexOf("#");
-      if (poundIndex < 0) {
-        // e.g. "There was no file found by that name."
-        messages = null;
-        bundleKey = null;
-        message = messageKey;
-      } else if (poundIndex == 0) {
-        // e.g. "#fileNotFound"
-        messages = this.getBundle();
-        bundleKey = messageKey.substring(1);
-      } else if (poundIndex >= messageKey.length() - 1) {        
-        // e.g. "com.foobar.bizbaw.Messages#"
-        if (this.logger != null && this.logger.isLoggable(Level.WARNING)) {
-          this.logger.logp(Level.WARNING, this.getClass().getName(), "getMessage", "messageKeyEndsWithPound", messageKey);
-        }
-        messages = null;
-        bundleKey = null;
-      } else {
-        // e.g. "com.foobar.bizbaw.Messages#fileNotFound"
-        messages = this.getBundle(messageKey.substring(0, poundIndex).trim(), locale);
-        bundleKey = messageKey.substring(poundIndex + 1).trim();
-      }
-
-      if (messages != null && bundleKey != null) {
-        try {
-          message = messages.getString(bundleKey);
-        } catch (final MissingResourceException notFound) {
+        final ResourceBundle messages;
+        final String bundleKey;
+        
+        final int poundIndex = messageKey.indexOf("#");
+        if (poundIndex < 0) {
+          // e.g. "There was no file found by that name."
+          messages = null;
+          bundleKey = null;
+          message = messageKey;
+        } else if (poundIndex == 0) {
+          // e.g. "#fileNotFound"
+          messages = this.getBundle();
+          bundleKey = messageKey.substring(1);
+        } else if (poundIndex >= messageKey.length() - 1) {        
+          // e.g. "com.foobar.bizbaw.Messages#"
           if (this.logger != null && this.logger.isLoggable(Level.WARNING)) {
-            this.logger.logp(Level.WARNING, this.getClass().getName(), "getMessage", "noSuchBundleKey", messageKey);
+            this.logger.logp(Level.WARNING, this.getClass().getName(), "getMessage", "messageKeyEndsWithPound", messageKey);
           }
-          message = null;
+          messages = null;
+          bundleKey = null;
+        } else {
+          // e.g. "com.foobar.bizbaw.Messages#fileNotFound"
+          messages = this.getBundle(messageKey.substring(0, poundIndex).trim(), locale);
+          bundleKey = messageKey.substring(poundIndex + 1).trim();
+        }
+        
+        if (messages != null && bundleKey != null) {
+          try {
+            message = messages.getString(bundleKey);
+          } catch (final MissingResourceException notFound) {
+            if (this.logger != null && this.logger.isLoggable(Level.WARNING)) {
+              this.logger.logp(Level.WARNING, this.getClass().getName(), "getMessage", "noSuchBundleKey", messageKey);
+            }
+            message = null;
+          }
         }
       }
       
@@ -159,17 +166,17 @@ public class ThrowableMessageFactory extends ThrowableMessageKeySelector {
       message = defaultValue;
     }
 
-    message = this.interpolateMessage(messageKey, locale, message, throwableChain);
+    message = this.interpolateMessage(match, locale, message, throwableChain);
 
     return message;
   }
 
   /**
+   * Expands template constructs in the supplied {@code message}.
    * 
-   * @param messageKey the {@linkplain
-   * ThrowableMessageKeySelector#getKey(Throwable, String) message
-   * key} used to produce the message being interpolated; must not be
-   * {@code null}
+   * @param match the {@link Match} that
+   * produced the message to interpolate; may be {@code null} in which
+   * case no match actually occurred
    *
    * @param locale the {@link Locale} to use; may be {@code null} in
    * which case if a {@link Locale} is needed then the return value of
@@ -182,14 +189,17 @@ public class ThrowableMessageFactory extends ThrowableMessageKeySelector {
    * message is ultimately being produced; may be {@code null} in
    * which case the supplied {@code message} will be returned as-is
    */
-  protected String interpolateMessage(final String messageKey, Locale locale, final String message, final Throwable throwableChain) {
+  protected String interpolateMessage(final Match match, Locale locale, final String message, final Throwable throwableChain) {
     String returnValue = message;
-    if (message != null && throwableChain != null) {
+    if (match != null && message != null && throwableChain != null) {
       final int orbTagIndex = message.indexOf("@{");
       if (orbTagIndex >= 0) {
         // we have an MVEL 2 message template
         // let's eval it at runtime; no need to compile it
-        returnValue = (String)TemplateRuntime.eval(message, throwableChain);
+        // returnValue = (String)TemplateRuntime.eval(message, throwableChain);
+        final Map<Object, Object> variables = new HashMap<Object, Object>(13);
+        variables.put("matcher", match.getThrowableMatcher());
+        returnValue = (String)TemplateRuntime.eval(message, throwableChain, variables);
       } else {
         if (locale == null) {
           locale = Locale.getDefault();
