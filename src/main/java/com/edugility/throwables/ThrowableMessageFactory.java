@@ -255,29 +255,6 @@ public class ThrowableMessageFactory extends ThrowableMessageKeySelector {
     return returnValue;
   }
 
-  @Deprecated
-  public static final ThrowableMessageFactory read(final Reader reader) throws ClassNotFoundException, IOException, ThrowableMatcherException {
-    if (reader == null) {
-      throw new IllegalArgumentException("reader", new NullPointerException("reader"));
-    }
-    if (reader instanceof LineNumberReader) {
-      return read((LineNumberReader)reader);
-    } else {
-      return read(new LineNumberReader(reader));
-    }
-  }
-
-  @Deprecated
-  @SuppressWarnings("fallthrough")
-  public static final ThrowableMessageFactory read(final LineNumberReader reader) throws ClassNotFoundException, IOException, ThrowableMatcherException {
-    if (reader == null) {
-      throw new IllegalArgumentException("reader", new NullPointerException("reader"));
-    }
-    final ThrowableMessageFactory returnValue = new ThrowableMessageFactory();
-    returnValue.load(reader);
-    return returnValue;
-  }
-
   public void load(final LineNumberReader reader) throws ClassNotFoundException, IOException, ThrowableMatcherException {
     if (reader == null) {
       throw new IllegalArgumentException("reader", new NullPointerException("reader"));
