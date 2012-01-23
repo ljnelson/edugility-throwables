@@ -34,7 +34,7 @@ import java.io.StringReader;
 
 import java.nio.CharBuffer;
 
-import java.sql.SQLException; // for javadoc only
+import java.sql.SQLException;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -142,7 +142,6 @@ public final class ThrowablePattern implements Serializable {
   }
 
   private static final void setReference(final ParsingState parsingState) {
-    // TODO: install a matcher whose matches() method returns true, but
     final String referenceName = parsingState.referenceBuffer.toString();
     Object key = null;
     try {
@@ -840,7 +839,7 @@ public final class ThrowablePattern implements Serializable {
         return Collections.singleton(this.key);
       }
     }
-    
+
   }
 
   private static final class ThrowableListElementThrowableMatcher extends AbstractThrowableMatcher {

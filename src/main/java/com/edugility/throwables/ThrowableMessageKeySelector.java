@@ -27,9 +27,8 @@
  */
 package com.edugility.throwables;
 
-import java.io.Reader;
-import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.LineNumberReader;
 import java.io.ObjectInputStream;
 import java.io.Serializable;
 
@@ -48,16 +47,47 @@ import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+/**
+ * A class that 
+ *
+ * @author <a href="mailto:ljnelson@gmail.com">Laird Nelson</a>
+ *
+ * @since 1.2-SNAPSHOT
+ *
+ * @see ThrowableMessageFactory
+ */
 public class ThrowableMessageKeySelector implements Serializable {
 
   private static final long serialVersionUID = 1L;
 
-  protected static final String LS = System.getProperty("line.separator", "\n");
+  private static final String LS = System.getProperty("line.separator", "\n");
 
+  /**
+   * The {@link Logger} used by this {@link
+   * ThrowableMessageKeySelector} instance.  Please see <a
+   * href="http://wiki.apache.org/commons/Logging/StaticLog">this
+   * article</a> for many good reasons why this class does not use a
+   * {@code static} logger.
+   *
+   * <p>This field may be {@code null}.</p>
+   *
+   * <p>This field is declared {@code transient} because {@link
+   * Logger} instances are not {@link Serializable}.</p>
+   *
+   * <p>This class defines a {@code private final void
+   * readObject(final ObjectInputStream stream) throws
+   * ClassNotFoundException, IOException} method internally that
+   * correctly initializes this field upon deserialization.</p>
+   *
+   * @see #createLogger()
+   */
   protected transient Logger logger;
 
   private final Map<String, Set<ThrowablePattern>> patterns;
 
+  /**
+   * Creates a new {@link ThrowableMessageKeySelector}.
+   */
   public ThrowableMessageKeySelector() {
     super();
     this.logger = this.createLogger();
@@ -68,6 +98,12 @@ public class ThrowableMessageKeySelector implements Serializable {
     this.patterns = new LinkedHashMap<String, Set<ThrowablePattern>>();
   }
 
+  /**
+   * Returns a {@link Logger} instance suitable for use by this class
+   * and its subclasses.
+   *
+   * @return a {@link Logger} instance
+   */
   protected Logger createLogger() {
     return this.defaultCreateLogger();
   }
@@ -80,7 +116,7 @@ public class ThrowableMessageKeySelector implements Serializable {
       bundleName = String.format("%sLogMessages", c.getName());
       ResourceBundle rb = null;
       try {
-        rb = ResourceBundle.getBundle(bundleName);        
+        rb = ResourceBundle.getBundle(bundleName);
       } catch (final MissingResourceException noBundle) {
         bundleName = null;
         rb = null;
@@ -98,11 +134,11 @@ public class ThrowableMessageKeySelector implements Serializable {
     return logger;
   }
 
-  public final void putPattern(final String pattern, final String key) throws ClassNotFoundException, IOException {
-    this.putPatterns(Collections.singleton(pattern), key);
+  public final void compileAndPut(final String pattern, final String key) throws ClassNotFoundException, IOException {
+    this.compileAndPut(Collections.singleton(pattern), key);
   }
 
-  public final void putPatterns(final Iterable<String> patterns, final String key) throws ClassNotFoundException, IOException {
+  public final void compileAndPut(final Iterable<String> patterns, final String key) throws ClassNotFoundException, IOException {
     if (key != null && patterns != null) {
       this.put(stringsToPatterns(patterns), key);
     }
@@ -128,6 +164,7 @@ public class ThrowableMessageKeySelector implements Serializable {
     }
   }
 
+  
   public static final Iterable<ThrowablePattern> stringsToPatterns(final Iterable<String> stringPatterns) throws ClassNotFoundException, IOException {
     Iterable<ThrowablePattern> returnValue = null;
     if (stringPatterns != null) {
@@ -151,12 +188,12 @@ public class ThrowableMessageKeySelector implements Serializable {
     }
     return returnValue;
   }
-    
-  public final void addPattern(final String pattern, final String key) throws ClassNotFoundException, IOException {
-    this.addPatterns(Collections.singleton(pattern), key);
+
+  public final void compileAndAdd(final String pattern, final String key) throws ClassNotFoundException, IOException {
+    this.compileAndAdd(Collections.singleton(pattern), key);
   }
 
-  public final void addPatterns(final Iterable<String> patterns, final String key) throws ClassNotFoundException, IOException {
+  public final void compileAndAdd(final Iterable<String> patterns, final String key) throws ClassNotFoundException, IOException {
     if (key != null && patterns != null) {
       this.add(stringsToPatterns(patterns), key);
     }
@@ -267,20 +304,123 @@ public class ThrowableMessageKeySelector implements Serializable {
     assert this.logger != null;
   }
 
+  public void load(final LineNumberReader reader) throws ClassNotFoundException, IOException, ThrowableMatcherException {
+    if (reader == null) {
+      throw new IllegalArgumentException("reader", new NullPointerException("reader"));
+    }
+    final Set<String> patterns = new LinkedHashSet<String>();
+    final List<String> messageLines = new ArrayList<String>();
+    State state = State.NORMAL;
+    String line = null;
+    while ((line = reader.readLine()) != null) {
+      line = line.trim();
+
+      switch (state) {
+
+        // NORMAL
+      case NORMAL:
+        if (line.isEmpty()) {
+          break;
+        } else if (line.startsWith("--")) {
+          throw new IllegalStateException("\"--\" is not permitted here at line " + reader.getLineNumber());
+        } else if (line.startsWith("#")) {
+          // line comment; nothing to do
+          break;
+        } else {
+          state = State.MATCHERS;
+          patterns.add(line);
+          break;
+        }
+        // end NORMAL
+
+
+        // MATCHERS
+      case MATCHERS:
+        if (line.isEmpty()) {
+          throw new IllegalStateException("An empty line is not permitted here at line " + reader.getLineNumber());
+        } else if (line.startsWith("--")) {
+          state = State.MESSAGE;
+        } else if (line.startsWith("#")) {
+          // line comment; nothing to do
+        } else {
+          patterns.add(line);
+        }
+        break;
+        // end MATCHERS
+
+
+        // MESSAGE
+      case MESSAGE:
+        if (line.isEmpty()) {
+          final StringBuilder message = new StringBuilder();
+          final Iterator<String> iterator = messageLines.iterator();
+          assert iterator != null;
+          while (iterator.hasNext()) {
+            final String ml = iterator.next();
+            if (ml != null) {
+              message.append(ml);
+              if (iterator.hasNext()) {
+                message.append(LS);
+              }
+            }
+          }
+          this.compileAndAdd(patterns, message.toString());
+          patterns.clear();
+          messageLines.clear();
+          state = State.NORMAL;
+        } else {
+          // Yes, even if the line starts with "#".
+          messageLines.add(line);
+        }
+        break;
+        // end MESSAGE
+
+
+      default:
+        throw new IllegalStateException("Unexpected state: " + state);
+      }
+    }
+
+    if (!messageLines.isEmpty() && !patterns.isEmpty()) {
+      final StringBuilder message = new StringBuilder();
+      final Iterator<String> iterator = messageLines.iterator();
+      assert iterator != null;
+      while (iterator.hasNext()) {
+        final String ml = iterator.next();
+        if (ml != null) {
+          message.append(ml);
+          if (iterator.hasNext()) {
+            message.append(LS);
+          }
+        }
+      }
+      this.compileAndAdd(patterns, message.toString());
+      patterns.clear();
+      messageLines.clear();
+    }
+  }
+
+  private enum State {
+    NORMAL,
+    BLOCK_COMMENT,
+    MATCHERS,
+    MESSAGE
+  }
+
   protected static final class Match implements Serializable {
-    
+
     private static final long serialVersionUID = 1L;
 
     private final ThrowableMatcher matcher;
 
     private final String messageKey;
-    
+
     private Match(final ThrowableMatcher matcher, final String messageKey) {
       super();
       this.matcher = matcher;
       this.messageKey = messageKey;
     }
-    
+
     public final ThrowableMatcher getThrowableMatcher() {
       return this.matcher;
     }
