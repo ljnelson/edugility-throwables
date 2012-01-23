@@ -86,7 +86,7 @@ public class TestCaseThrowableMessageKeySelector {
     final IOException middle = new IOException(bottom);
     final SQLException top = new SQLException(middle);
     final String ls = System.getProperty("line.separator", "\n");
-    assertEquals("A key" + ls + "goes here @{matcher.getReference(1)}", selector.getKey(top, "Default"));
+    assertEquals("A key" + ls + "goes here {1}", selector.getKey(top, "Default"));
     System.out.println("*** " + selector.getMessage(top, "Default"));
   }
 

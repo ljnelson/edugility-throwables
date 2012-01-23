@@ -6,7 +6,7 @@ com.edugility.throwables.Bundle#noDice
 java.sql.SQLException[1]/**/java.lang.Exception
 --
 A key
-goes here @{matcher.getReference(1)}
+goes here {1}
 
 
 

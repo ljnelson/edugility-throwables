@@ -39,6 +39,7 @@ import java.util.ArrayList;
 import java.util.Formatter;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -46,6 +47,8 @@ import java.util.Locale;
 import java.util.MissingResourceException;
 import java.util.ResourceBundle;
 import java.util.Set;
+import java.util.SortedMap;
+import java.util.TreeMap;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -110,6 +113,10 @@ public class ThrowableMessageFactory extends ThrowableMessageKeySelector {
     return this.getMessage(throwableChain, Locale.getDefault(), defaultValue);
   }
 
+  /**
+   * Returns a localized message that is appropriate for the supplied
+   * {@link Throwable} chain in the supplied {@link Locale}.
+   */
   public String getMessage(final Throwable throwableChain, Locale locale, final String defaultValue) throws ThrowableMatcherException {
     if (throwableChain == null) {
       throw new IllegalArgumentException("throwableChain", new NullPointerException("throwableChain == null"));
@@ -192,35 +199,58 @@ public class ThrowableMessageFactory extends ThrowableMessageKeySelector {
   protected String interpolateMessage(final Match match, Locale locale, final String message, final Throwable throwableChain) {
     String returnValue = message;
     if (match != null && message != null && throwableChain != null) {
-      final int orbTagIndex = message.indexOf("@{");
-      if (orbTagIndex >= 0) {
-        // we have an MVEL 2 message template
-        // let's eval it at runtime; no need to compile it
-        // returnValue = (String)TemplateRuntime.eval(message, throwableChain);
-        final Map<Object, Object> variables = new HashMap<Object, Object>(13);
-        variables.put("matcher", match.getThrowableMatcher());
-        returnValue = (String)TemplateRuntime.eval(message, throwableChain, variables);
-      } else {
-        if (locale == null) {
-          locale = Locale.getDefault();
-        }
-        final int braceIndex = message.indexOf("{0}");
-        if (braceIndex >= 0) {
-          // we have a MessageFormat message template
-          final MessageFormat messageFormat = new MessageFormat(message, locale);
-          final StringBuffer buffer = messageFormat.format(throwableChain, new StringBuffer(), null);
-          assert buffer != null;
-          returnValue = buffer.toString();
+      final ThrowableMatcher matcher = match.getThrowableMatcher();
+      assert matcher != null;
+      int index = 0;
+      while (index >= 0) {
+        index = returnValue.indexOf("@{");
+        if (index >= 0) {
+          // we have an MVEL 2 message template
+          final Map<Object, Object> variables = new HashMap<Object, Object>(5);
+          variables.put("matcher", matcher);
+          returnValue = (String)TemplateRuntime.eval(returnValue, throwableChain, variables);
         } else {
-          final int percentSIndex = message.indexOf("%s");
-          if (percentSIndex >= 0) {
-            // we have a java.util.Formatter message template
-            final Formatter formatter = new Formatter(locale);
-            formatter.format(message, throwableChain);
-            returnValue = formatter.toString();
+          if (locale == null) {
+            locale = Locale.getDefault();
           }
-        }
-      } 
+          index = returnValue.indexOf("{0}");
+          if (index >= 0) {
+            // we have a MessageFormat message template
+            final MessageFormat messageFormat = new MessageFormat(returnValue, locale);
+            final Iterable<Object> referenceKeys = matcher.getReferenceKeys();
+            final SortedMap<Integer, Throwable> arguments = new TreeMap<Integer, Throwable>();
+            arguments.put(Integer.valueOf(0), throwableChain);
+            if (referenceKeys != null) {
+              for (final Object key : referenceKeys) {
+                if (key instanceof Integer) {
+                  arguments.put((Integer)key, matcher.getReference(key));
+                } else if (key instanceof Number) {
+                  arguments.put(Integer.valueOf(((Number)key).intValue()), matcher.getReference(key));
+                }
+              }
+            }
+            final Object[] args = new Object[arguments.size()];
+            final Set<Entry<Integer, Throwable>> entrySet = arguments.entrySet();
+            assert entrySet != null;
+            int i = 0;
+            for (final Entry<Integer, Throwable> argEntry : entrySet) {
+              assert argEntry != null;
+              args[i++] = argEntry.getValue();
+            }
+            final StringBuffer buffer = messageFormat.format(args, new StringBuffer(), null);
+            assert buffer != null;
+            returnValue = buffer.toString();
+          } else {
+            index = returnValue.indexOf("%s");
+            if (index >= 0) {
+              // we have a java.util.Formatter message template
+              final Formatter formatter = new Formatter(locale);
+              formatter.format(returnValue, throwableChain);
+              returnValue = formatter.toString();
+            }
+          }
+        } 
+      }
     }
     return returnValue;
   }
