@@ -70,11 +70,13 @@ public final class ThrowablePattern implements Serializable {
     INDETERMINATE_GLOB,
     GLOB,
     GREEDY_GLOB,
+    RELUCTANT_GLOB,
     INDETERMINATE_PERIOD,
     ELLIPSIS,
     IDENTIFIER,
     REFERENCE,
-    PROPERTY_BLOCK
+    PROPERTY_BLOCK,
+    END
   }
 
   private ThrowablePattern(final ConjunctiveThrowableMatcher matcher) {
@@ -267,6 +269,11 @@ public final class ThrowablePattern implements Serializable {
           parsingState.referenceStart();
           break;
 
+        case '$':
+          parsingState.rightAnchor();
+          parsingState.state = State.END;
+          break;
+
         default:
           if (!Character.isJavaIdentifierStart(parsingState.character)) {
             throw new IllegalStateException(buildIllegalStateExceptionMessage(parsingState));
@@ -354,11 +361,36 @@ public final class ThrowablePattern implements Serializable {
           }
           break;
 
+        case '?':
+          parsingState.state = State.RELUCTANT_GLOB;
+          parsingState.reluctantGlob();
+          break;
+
         default:
           throw new IllegalStateException(buildIllegalStateExceptionMessage(parsingState));
         }
         break;
         // end INDETERMINATE_GLOB
+
+
+        // RELUCTANT_GLOB
+      case RELUCTANT_GLOB:
+        if (Character.isWhitespace(parsingState.character)) {
+          // Eat whitespace
+          break;
+        }
+        switch (parsingState.character) {
+
+        case '/':
+          parsingState.slash();
+          parsingState.state = State.NORMAL;
+          break;
+
+        default:
+          throw new IllegalStateException(buildIllegalStateExceptionMessage(parsingState));
+        }
+        break;
+        // end RELUCTANT_GLOB
 
 
         // GREEDY_GLOB
@@ -423,6 +455,13 @@ public final class ThrowablePattern implements Serializable {
           parsingState.classNameMatchTest();
           parsingState.state = State.PROPERTY_BLOCK;
           parsingState.propertyBlockStart();
+          break;
+
+        case '$':
+          parsingState.identifierEnd();
+          parsingState.classNameMatchTest();
+          parsingState.rightAnchor();
+          parsingState.state = State.END;
           break;
 
         default:
@@ -506,6 +545,12 @@ public final class ThrowablePattern implements Serializable {
         }
         break;
         // end PROPERTY_BLOCK
+
+
+        // END
+      case END:
+        throw new IllegalStateException(buildIllegalStateExceptionMessage(parsingState));
+        // end END
 
 
       default:
@@ -874,7 +919,7 @@ public final class ThrowablePattern implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    private List<ThrowableListElementThrowableMatcher> matchers;
+    private List<ThrowableMatcher> matchers;
 
     private int indexOfFirstNegativeMatcher;
 
@@ -887,7 +932,7 @@ public final class ThrowablePattern implements Serializable {
       }
       this.pattern = pattern;
       this.indexOfFirstNegativeMatcher = -1;
-      this.matchers = new ArrayList<ThrowableListElementThrowableMatcher>();
+      this.matchers = new ArrayList<ThrowableMatcher>();
     }
 
     @Override
@@ -935,7 +980,7 @@ public final class ThrowablePattern implements Serializable {
     public final void setThrowable(final Throwable throwableChain) {
       super.setThrowable(throwableChain);
       if (this.matchers != null && !this.matchers.isEmpty()) {
-        for (final ThrowableListElementThrowableMatcher m : this.matchers) {
+        for (final ThrowableMatcher m : this.matchers) {
           if (m != null) {
             m.setThrowable(throwableChain);
           }
@@ -952,19 +997,21 @@ public final class ThrowablePattern implements Serializable {
       this.matchers.clear();
     }
 
-    private final void add(final ThrowableListElementThrowableMatcher p) {
+    private final void add(final ThrowableMatcher p) {
       assert this.matchers != null;
       if (p != null) {
         this.matchers.add(p);
-
-        if (p.offset < 0) {
+        
+        if (p instanceof ThrowableListElementThrowableMatcher && ((ThrowableListElementThrowableMatcher)p).offset < 0) {
           if (this.indexOfFirstNegativeMatcher < 0) {
             this.indexOfFirstNegativeMatcher = this.matchers.size() - 1;
           }
           int offsetToAssign = -(this.matchers.size() - this.indexOfFirstNegativeMatcher);
           for (int i = this.indexOfFirstNegativeMatcher; i < this.matchers.size(); i++) {
-            final ThrowableListElementThrowableMatcher matcher = this.matchers.get(i);
-            matcher.offset = offsetToAssign++;
+            final ThrowableMatcher matcher = this.matchers.get(i);
+            if (matcher instanceof ThrowableListElementThrowableMatcher) {
+              ((ThrowableListElementThrowableMatcher)matcher).offset = offsetToAssign++;
+            }
           }
         }
 
@@ -991,7 +1038,7 @@ public final class ThrowablePattern implements Serializable {
       try {
         final ConjunctiveThrowableMatcher superClone = (ConjunctiveThrowableMatcher)super.clone();
         assert superClone != null;
-        superClone.matchers = new ArrayList<ThrowableListElementThrowableMatcher>(this.matchers);
+        superClone.matchers = new ArrayList<ThrowableMatcher>(this.matchers);
         return superClone;
       } catch (final CloneNotSupportedException wontHappen) {
         throw (InternalError)new InternalError().initCause(wontHappen);
@@ -1114,6 +1161,10 @@ public final class ThrowablePattern implements Serializable {
       this.leftAnchor = true;
     }
 
+    private final void rightAnchor() {
+      this.rightAnchor = true;
+    }
+
     private final void newElementMatcher(final ThrowableMatcher delegate) {
       this.matchers.add(new ThrowableListElementThrowableMatcher(this.depthLevel, delegate));
     }
@@ -1197,6 +1248,10 @@ public final class ThrowablePattern implements Serializable {
     private final void greedyGlob() {
       this.greedyGlob = true;
       this.depthLevel = 0;
+    }
+
+    private final void reluctantGlob() {
+
     }
 
     private final void commentStart() {
