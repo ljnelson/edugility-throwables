@@ -53,7 +53,7 @@ public class TestCaseThrowableFinders {
   public void testCausalChain() throws Exception {
     final ClassNameMatchingThrowableFinder f1 = new ClassNameMatchingThrowableFinder("java.lang.Exception");
     final ClassNameMatchingThrowableFinder f2 = new ClassNameMatchingThrowableFinder("java.lang.RuntimeException");
-    final CausalChainMatchingThrowableFinder tf = new CausalChainMatchingThrowableFinder(new LinkedHashSet<AbstractThrowableFinder>(Arrays.asList(f1, f2)));
+    final CausalChainMatchingThrowableFinder tf = new CausalChainMatchingThrowableFinder(f1, f2);
     final RuntimeException bottom = new RuntimeException("bottom");
     final Exception middle = new Exception("middle", bottom);
     final Exception top = new Exception("top", middle);
@@ -86,7 +86,7 @@ public class TestCaseThrowableFinders {
   public void testDisjunctive() throws Exception {
     final ClassNameMatchingThrowableFinder f1 = new ClassNameMatchingThrowableFinder("java.lang.Exception");
     final ClassNameMatchingThrowableFinder f2 = new ClassNameMatchingThrowableFinder("java.lang.RuntimeException");
-    final DisjunctiveThrowableFinder d = new DisjunctiveThrowableFinder(new LinkedHashSet<AbstractThrowableFinder>(Arrays.asList(f1, f2)));
+    final DisjunctiveThrowableFinder d = new DisjunctiveThrowableFinder(f1, f2);
     final Exception e = new Exception("e");
     final RuntimeException re = new RuntimeException("re");
     d.setThrowable(e);

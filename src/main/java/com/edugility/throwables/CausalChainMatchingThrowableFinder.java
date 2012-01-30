@@ -30,6 +30,7 @@ package com.edugility.throwables;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
 
 public class CausalChainMatchingThrowableFinder extends AbstractThrowableFinder {
@@ -38,7 +39,15 @@ public class CausalChainMatchingThrowableFinder extends AbstractThrowableFinder 
 
   private final Set<AbstractThrowableFinder> delegates;
   
-  public CausalChainMatchingThrowableFinder(final Set<AbstractThrowableFinder> delegates) {
+  public CausalChainMatchingThrowableFinder(final AbstractThrowableFinder... delegates) {
+    this(delegates == null ? (LinkedHashSet<AbstractThrowableFinder>)null : new LinkedHashSet<AbstractThrowableFinder>(Arrays.asList(delegates)));
+  }
+
+  public CausalChainMatchingThrowableFinder(final List<AbstractThrowableFinder> delegates) {
+    this(delegates == null ? (LinkedHashSet<AbstractThrowableFinder>)null : new LinkedHashSet<AbstractThrowableFinder>(delegates));
+  }
+
+  public CausalChainMatchingThrowableFinder(final LinkedHashSet<AbstractThrowableFinder> delegates) {
     super();
     if (delegates == null) {
       this.delegates = Collections.emptySet();
@@ -83,7 +92,11 @@ public class CausalChainMatchingThrowableFinder extends AbstractThrowableFinder 
             returnValue = false;
             break;
           }
-          t = t.getCause();
+          t = delegate.getFound();
+          assert t != null;
+          if (t == initialThrowable) {
+            t = t.getCause();
+          }
         }
       }
     }

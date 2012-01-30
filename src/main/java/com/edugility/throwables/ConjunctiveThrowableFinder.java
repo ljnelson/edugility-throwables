@@ -27,8 +27,10 @@
  */
 package com.edugility.throwables;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
 
 public class ConjunctiveThrowableFinder extends AbstractThrowableFinder {
@@ -37,7 +39,15 @@ public class ConjunctiveThrowableFinder extends AbstractThrowableFinder {
 
   private final Set<AbstractThrowableFinder> delegates;
   
-  public ConjunctiveThrowableFinder(final Set<AbstractThrowableFinder> delegates) {
+  public ConjunctiveThrowableFinder(final AbstractThrowableFinder... delegates) {
+    this(delegates == null ? (LinkedHashSet<AbstractThrowableFinder>)null : new LinkedHashSet<AbstractThrowableFinder>(Arrays.asList(delegates)));
+  }
+
+  public ConjunctiveThrowableFinder(final List<AbstractThrowableFinder> delegates) {
+    this(delegates == null ? (LinkedHashSet<AbstractThrowableFinder>)null : new LinkedHashSet<AbstractThrowableFinder>(delegates));
+  }
+
+  public ConjunctiveThrowableFinder(final LinkedHashSet<AbstractThrowableFinder> delegates) {
     super();
     if (delegates == null) {
       this.delegates = Collections.emptySet();
