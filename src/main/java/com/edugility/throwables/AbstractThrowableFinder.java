@@ -154,13 +154,6 @@ public abstract class AbstractThrowableFinder implements Cloneable, Serializable
     return this.exclusiveEndIndex;
   }
 
-  public void advance() {
-    final Throwable t = this.getThrowable();
-    if (t != null) {
-      this.setThrowable(t.getCause());
-    }
-  }
-
   public abstract boolean find() throws ThrowableFinderException;
 
 }

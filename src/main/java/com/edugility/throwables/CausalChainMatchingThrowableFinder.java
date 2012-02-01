@@ -33,58 +33,28 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
-public class CausalChainMatchingThrowableFinder extends AbstractThrowableFinder {
+public class CausalChainMatchingThrowableFinder extends MultipleDelegateThrowableFinder {
 
   private static final long serialVersionUID = 1L;
 
-  private final Set<AbstractThrowableFinder> delegates;
-  
   public CausalChainMatchingThrowableFinder(final AbstractThrowableFinder... delegates) {
-    this(delegates == null ? (LinkedHashSet<AbstractThrowableFinder>)null : new LinkedHashSet<AbstractThrowableFinder>(Arrays.asList(delegates)));
+    super(delegates);
   }
 
   public CausalChainMatchingThrowableFinder(final List<AbstractThrowableFinder> delegates) {
-    this(delegates == null ? (LinkedHashSet<AbstractThrowableFinder>)null : new LinkedHashSet<AbstractThrowableFinder>(delegates));
+    super(delegates);
   }
 
   public CausalChainMatchingThrowableFinder(final LinkedHashSet<AbstractThrowableFinder> delegates) {
-    super();
-    if (delegates == null) {
-      this.delegates = Collections.emptySet();
-    } else {
-      this.delegates = new LinkedHashSet<AbstractThrowableFinder>(delegates);
-    }
-    this.clear();
-  }
-
-  @Override
-  public void clear() {
-    super.clear();
-    if (this.delegates != null && !this.delegates.isEmpty()) {
-      for (final AbstractThrowableFinder delegate : this.delegates) {
-        if (delegate != null) {
-          delegate.clear();
-        }
-      }
-    }
-  }
-
-  @Override
-  public void setThrowable(final Throwable t) {
-    super.setThrowable(t);
-    for (final AbstractThrowableFinder delegate : this.delegates) {
-      if (delegate != null) {
-        delegate.setThrowable(t);
-      }
-    }
+    super(delegates);
   }
 
   @Override
   public boolean find() throws ThrowableFinderException {
-    boolean returnValue = true;
     final Throwable initialThrowable = this.getThrowable();
-    Throwable t = initialThrowable;
-    if (t != null && this.delegates != null && !this.delegates.isEmpty()) {
+    boolean returnValue = this.delegates != null && !this.delegates.isEmpty() && initialThrowable != null;
+    if (returnValue) {
+      Throwable t = initialThrowable;
       for (final AbstractThrowableFinder delegate : this.delegates) {
         if (t != null && delegate != null) {
           delegate.setThrowable(t);

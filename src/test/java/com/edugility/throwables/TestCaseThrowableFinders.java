@@ -51,32 +51,63 @@ public class TestCaseThrowableFinders {
 
   @Test
   public void testCausalChain() throws Exception {
+    // Match a java.lang.Exception followed by a
+    // java.lang.RuntimeException.
     final ClassNameMatchingThrowableFinder f1 = new ClassNameMatchingThrowableFinder("java.lang.Exception");
     final ClassNameMatchingThrowableFinder f2 = new ClassNameMatchingThrowableFinder("java.lang.RuntimeException");
     final CausalChainMatchingThrowableFinder tf = new CausalChainMatchingThrowableFinder(f1, f2);
+
+    // Build up a simple Exception structure, part of which will match.
     final RuntimeException bottom = new RuntimeException("bottom");
     final Exception middle = new Exception("middle", bottom);
     final Exception top = new Exception("top", middle);
+
+    // The "top" of the exception stack should not match, because it
+    // is a java.lang.Exception followed by another
+    // java.lang.Exception.
     tf.setThrowable(top);
     assertFalse(tf.find());
+    assertNull(tf.getFound());
+
+    // But the middle of the stack SHOULD match, because it is a
+    // java.lang.Exception followed by a java.lang.RuntimeException.
     tf.setThrowable(middle);
     assertTrue(tf.find());
     assertSame(middle, tf.getFound());
-    tf.clear();
+
+    // OK, take the previous example and now match that construct
+    // anywhere it occurs.  We do this by wrapping it in a
+    // FirstMatchingThrowableFinder.
     final FirstMatchingThrowableFinder firstMatching = new FirstMatchingThrowableFinder(tf);
+
+    // The middle of the stack will match, even when we start matching
+    // from the top.
     firstMatching.setThrowable(top);
     assertTrue(firstMatching.find());
     assertSame(middle, firstMatching.getFound());
-    firstMatching.clear();
+
+    // In this case, a LastMatchingThrowableFinder will do the trick
+    // as well.
     final LastMatchingThrowableFinder lastMatching = new LastMatchingThrowableFinder(tf);
+
+    // The last occurrence of our construct is the same as our first
+    // occurrence, so match from the top.
     lastMatching.setThrowable(top);
     assertTrue(lastMatching.find());
     assertSame(middle, lastMatching.getFound());
+
+    // Now tack on another matching construct on top of the first one.
     final RuntimeException bigTop = new RuntimeException("bigTop", top);
     final Exception superTop = new Exception("superTop", bigTop);
+
+    // That means that our FirstMatchingThrowableFinder will
+    // immediately match.
     firstMatching.setThrowable(superTop);
     assertTrue(firstMatching.find());
     assertSame(superTop, firstMatching.getFound());
+
+    // And it means that our LastMatchingThrowableFinder will match
+    // what it did before.
     lastMatching.setThrowable(superTop);
     assertTrue(lastMatching.find());
     assertSame(middle, lastMatching.getFound());

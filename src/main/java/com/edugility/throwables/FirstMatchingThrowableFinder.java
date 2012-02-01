@@ -27,45 +27,37 @@
  */
 package com.edugility.throwables;
 
-public class FirstMatchingThrowableFinder extends AbstractThrowableFinder {
+public class FirstMatchingThrowableFinder extends SingleDelegateThrowableFinder {
 
   private static final long serialVersionUID = 1L;
 
-  private final AbstractThrowableFinder delegate;
+  public FirstMatchingThrowableFinder() {
+    super();
+  }
   
   public FirstMatchingThrowableFinder(final AbstractThrowableFinder delegate) {
-    super();
-    if (delegate == null) {
-      throw new IllegalArgumentException("delegate");
-    }
-    this.delegate = delegate;
-    this.clear();
-  }
-
-  @Override
-  public void clear() {
-    super.clear();
-    if (this.delegate != null) {
-      this.delegate.clear();
-    }
+    super(delegate);
   }
 
   @Override
   public boolean find() throws ThrowableFinderException {
     boolean returnValue = false;
-    final ThrowableCauseIterator iterator = new ThrowableCauseIterator(this.getThrowable());
-    while (iterator.hasNext()) {
-      final Throwable t = iterator.next();
-      assert t != null;
-      this.delegate.setThrowable(t);
-      if (this.delegate.find()) {
-        this.setFound(this.delegate.getFound());
-        returnValue = true;
-        break;
+    final AbstractThrowableFinder delegate = this.getDelegate();
+    if (delegate != null) {
+      final ThrowableCauseIterator iterator = new ThrowableCauseIterator(this.getThrowable());
+      while (iterator.hasNext()) {
+        final Throwable t = iterator.next();
+        assert t != null;
+        delegate.setThrowable(t);
+        if (delegate.find()) {
+          this.setFound(delegate.getFound());
+          returnValue = true;
+          break;
+        }
       }
-    }
-    if (!returnValue) {
-      this.clear();
+      if (!returnValue) {
+        this.clear();
+      }
     }
     return returnValue;
   }

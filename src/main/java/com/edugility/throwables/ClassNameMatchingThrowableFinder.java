@@ -33,18 +33,22 @@ public class ClassNameMatchingThrowableFinder extends AbstractThrowableFinder {
 
   private static final long serialVersionUID = 1L;
 
-  private final String className;
+  private String className;
 
   public ClassNameMatchingThrowableFinder(final String className) {
     super();
-    this.className = className;
-    if (className == null) {
-      throw new IllegalArgumentException("className");
-    }
+    this.setClassName(className);
   }
 
   public String getClassName() {
     return this.className;
+  }
+
+  public void setClassName(final String className) {
+    if (className == null) {
+      throw new IllegalArgumentException("className");
+    }
+    this.className = className;
   }
 
   @Override

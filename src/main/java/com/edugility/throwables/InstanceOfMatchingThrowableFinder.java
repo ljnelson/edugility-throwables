@@ -33,24 +33,36 @@ public class InstanceOfMatchingThrowableFinder extends AbstractThrowableFinder {
 
   private static final long serialVersionUID = 1L;
 
-  private final Class<? extends Throwable> cls;
+  private Class<? extends Throwable> cls;
 
   public InstanceOfMatchingThrowableFinder(final Class<? extends Throwable> cls) {
     super();
-    if (cls == null) {
-      throw new IllegalArgumentException("cls");
+    this.setThrowableClass(cls);
+  }
+
+  public Class<? extends Throwable> getThrowableClass() {
+    return this.cls;
+  }
+
+  public void setThrowableClass(final Class<? extends Throwable> c) {
+    if (c == null) {
+      throw new IllegalArgumentException("c");
     }
-    this.cls = cls;
+    this.cls = c;
   }
 
   @Override
   public boolean find() throws ThrowableFinderException {
     boolean returnValue = false;
     final Throwable t = this.getThrowable();
-    if (t != null && this.cls.isInstance(t)) {
-      this.setFound(t);
-      returnValue = true;
-    } else {
+    if (t != null) {
+      final Class<? extends Throwable> c = this.getThrowableClass();
+      if (c != null && c.isInstance(t)) {
+        this.setFound(t);
+        returnValue = true;
+      }
+    }
+    if (!returnValue) {
       this.clear();
     }
     return returnValue;

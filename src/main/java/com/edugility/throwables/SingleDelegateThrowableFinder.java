@@ -27,42 +27,51 @@
  */
 package com.edugility.throwables;
 
-public class NthMatchingThrowableFinder extends SingleDelegateThrowableFinder {
+public abstract class SingleDelegateThrowableFinder extends AbstractThrowableFinder {
 
   private static final long serialVersionUID = 1L;
 
-  private final int n;
+  private AbstractThrowableFinder delegate;
+  
+  protected SingleDelegateThrowableFinder() {
+    super();
+  }
 
-  public NthMatchingThrowableFinder(final int n, final AbstractThrowableFinder delegate) {
-    super(delegate);
-    this.n = n;
+  protected SingleDelegateThrowableFinder(final AbstractThrowableFinder delegate) {
+    this();
+    if (delegate == null) {
+      throw new IllegalArgumentException("delegate");
+    }
+    this.delegate = delegate;
+    this.clear();
+  }
+
+  public AbstractThrowableFinder getDelegate() {
+    return this.delegate;
+  }
+
+  public final void setDelegate(final AbstractThrowableFinder delegate) {
+    if (delegate == null) {
+      throw new IllegalArgumentException("delegate");
+    }
+    this.delegate = delegate;    
   }
 
   @Override
-  public boolean find() throws ThrowableFinderException {
-    boolean returnValue = false;
-    final AbstractThrowableFinder delegate = this.getDelegate();
-    if (delegate != null) {
-      int matchCount = -1; // gets incremented on a match/find
-      final ThrowableCauseIterator iterator = new ThrowableCauseIterator(this.getThrowable());    
-      while (iterator.hasNext()) {
-        final Throwable t = iterator.next();
-        assert t != null;
-        delegate.setThrowable(t);
-        if (delegate.find()) {
-          ++matchCount;
-          if (matchCount == this.n) {
-            this.setFound(delegate.getFound());
-            returnValue = true;
-            break;
-          }
-        }
-      }
+  public void clear() {
+    super.clear();
+    if (this.delegate != null) {
+      this.delegate.clear();
     }
-    if (!returnValue) {
-      this.clear();
-    }
-    return returnValue;
   }
+
+  @Override
+  public void setThrowable(final Throwable throwable) {
+    super.setThrowable(throwable);
+    if (this.delegate != null) {
+      this.delegate.setThrowable(throwable);
+    }
+  }
+
 
 }

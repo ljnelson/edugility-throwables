@@ -27,37 +27,26 @@
  */
 package com.edugility.throwables;
 
-public class RootCauseMatchingThrowableFinder extends AbstractThrowableFinder {
+public class RootCauseMatchingThrowableFinder extends SingleDelegateThrowableFinder {
 
   private static final long serialVersionUID = 1L;
 
-  private final AbstractThrowableFinder delegate;
-  
   public RootCauseMatchingThrowableFinder(final AbstractThrowableFinder delegate) {
-    super();
-    if (delegate == null) {
-      throw new IllegalArgumentException("delegate");
-    }
-    this.delegate = delegate;
-    this.clear();
-  }
-
-  @Override
-  public void clear() {
-    super.clear();
-    if (this.delegate != null) {
-      this.delegate.clear();
-    }
+    super(delegate);
   }
 
   @Override
   public boolean find() throws ThrowableFinderException {
     boolean returnValue = false;
-    this.delegate.setThrowable(Throwables.getPrimordialCause(this.getThrowable()));
-    if (this.delegate.find()) {
-      this.setFound(this.delegate.getFound());
-      returnValue = true;
-    } else {
+    final AbstractThrowableFinder delegate = this.getDelegate();
+    if (delegate != null) {
+      delegate.setThrowable(Throwables.getPrimordialCause(this.getThrowable()));
+      if (delegate.find()) {
+        this.setFound(delegate.getFound());
+        returnValue = true;
+      }
+    }
+    if (!returnValue) {
       this.clear();
     }
     return returnValue;

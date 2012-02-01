@@ -33,40 +33,20 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
-public class ConjunctiveThrowableFinder extends AbstractThrowableFinder {
+public class ConjunctiveThrowableFinder extends MultipleDelegateThrowableFinder {
 
   private static final long serialVersionUID = 1L;
 
-  private final Set<AbstractThrowableFinder> delegates;
-  
   public ConjunctiveThrowableFinder(final AbstractThrowableFinder... delegates) {
-    this(delegates == null ? (LinkedHashSet<AbstractThrowableFinder>)null : new LinkedHashSet<AbstractThrowableFinder>(Arrays.asList(delegates)));
+    super(delegates);
   }
 
   public ConjunctiveThrowableFinder(final List<AbstractThrowableFinder> delegates) {
-    this(delegates == null ? (LinkedHashSet<AbstractThrowableFinder>)null : new LinkedHashSet<AbstractThrowableFinder>(delegates));
+    super(delegates);
   }
 
   public ConjunctiveThrowableFinder(final LinkedHashSet<AbstractThrowableFinder> delegates) {
-    super();
-    if (delegates == null) {
-      this.delegates = Collections.emptySet();
-    } else {
-      this.delegates = new LinkedHashSet<AbstractThrowableFinder>(delegates);
-    }
-    this.clear();
-  }
-
-  @Override
-  public void clear() {
-    super.clear();
-    if (this.delegates != null && !this.delegates.isEmpty()) {
-      for (final AbstractThrowableFinder delegate : this.delegates) {
-        if (delegate != null) {
-          delegate.clear();
-        }
-      }
-    }
+    super(delegates);
   }
 
   @Override
