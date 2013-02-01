@@ -31,6 +31,7 @@ import java.io.Serializable;
 
 import org.mvel2.MVEL;
 
+@Deprecated
 public class MVELExpressionMatchingThrowableFinder extends AbstractThrowableFinder {
 
   private static final long serialVersionUID = 1L;
@@ -54,7 +55,7 @@ public class MVELExpressionMatchingThrowableFinder extends AbstractThrowableFind
   }
 
   @Override
-  public boolean find() throws ThrowableFinderException {
+  protected boolean findSolo() throws ThrowableFinderException {
     final Throwable t = this.getThrowable();
     final boolean returnValue;
     if (t != null && this.compiledExpression != null) {

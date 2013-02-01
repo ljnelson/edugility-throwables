@@ -66,8 +66,8 @@ public class ThrowableChain extends Exception implements Collection<Throwable> {
   /**
    * The {@link List} containing additional {@link Throwable}s.  This
    * field is never {@code null} and never {@linkplain List#isEmpty()
-   * empty} and always contains this {@link ThrowableChain} itself as
-   * its first element.
+   * empty} and <strong>always contains this {@link ThrowableChain}
+   * itself as its first element</strong>.
    */
   private final CopyOnWriteArrayList<Throwable> list;
 
@@ -178,8 +178,8 @@ public class ThrowableChain extends Exception implements Collection<Throwable> {
     boolean returnValue = false;
     if (c != null && !c.isEmpty()) {
       for (final Throwable t : c) {
-        if (t != null) {
-          returnValue = returnValue || this.add(t);
+        if (t != null && this.add(t)) {
+          returnValue = true;
         }
       }
     }
@@ -309,7 +309,8 @@ public class ThrowableChain extends Exception implements Collection<Throwable> {
   }
 
   /**
-   * Returns {@code false}.
+   * Returns {@code false}, because a {@link ThrowableChain} always
+   * contains at least itself.
    *
    * @return {@code false} in all cases
    */
@@ -456,12 +457,13 @@ public class ThrowableChain extends Exception implements Collection<Throwable> {
         synchronized (s) {
           int i = 1;
           for (final Throwable t : this) {
-            if (t == this) {
-              s.print(i++ + ". ");
-              super.printStackTrace(s);
-            } else if (t != null) {
-              s.print(i++ + ". ");
-              t.printStackTrace(s);
+            if (t != null) {
+              s.format("%d. ", i++);
+              if (t == this) {
+                super.printStackTrace(s);
+              } else {
+                t.printStackTrace(s);
+              }
             }
           }
         }
@@ -494,12 +496,13 @@ public class ThrowableChain extends Exception implements Collection<Throwable> {
         synchronized (w) {
           int i = 1;
           for (final Throwable t : this) {          
-            if (t == this) {
-              w.print(i++ + ". ");
-              super.printStackTrace(w);
-            } else if (t != null) {
-              w.print(i++ + ". ");
-              t.printStackTrace(w);
+            if (t != null) {
+              w.format("%d. ", i++);
+              if (t == this) {
+                super.printStackTrace(w);
+              } else if (t != null) {
+                t.printStackTrace(w);
+              }
             }
           }
         }

@@ -27,6 +27,7 @@
  */
 package com.edugility.throwables;
 
+@Deprecated
 public class CauselessThrowableFinder extends AbstractThrowableFinder {
 
   private static final long serialVersionUID = 1L;
@@ -36,7 +37,7 @@ public class CauselessThrowableFinder extends AbstractThrowableFinder {
   }
 
   @Override
-  public boolean find() throws ThrowableFinderException {
+  protected boolean findSolo() throws ThrowableFinderException {
     boolean returnValue = false;
     final Throwable t = this.getThrowable();
     if (t != null && t.getCause() == null) {

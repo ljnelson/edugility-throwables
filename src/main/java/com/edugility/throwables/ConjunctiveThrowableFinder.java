@@ -33,6 +33,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
+@Deprecated
 public class ConjunctiveThrowableFinder extends MultipleDelegateThrowableFinder {
 
   private static final long serialVersionUID = 1L;
@@ -50,23 +51,33 @@ public class ConjunctiveThrowableFinder extends MultipleDelegateThrowableFinder 
   }
 
   @Override
-  public boolean find() throws ThrowableFinderException {
+  protected boolean findSolo() throws ThrowableFinderException {
     boolean returnValue = false;
     Throwable initialThrowable = this.getThrowable();
     if (initialThrowable != null && this.delegates != null && !this.delegates.isEmpty()) {
+      int lastIndex = -1;
+      Throwable found = null;
       for (final AbstractThrowableFinder delegate : this.delegates) {
         if (delegate != null) {
           delegate.setThrowable(initialThrowable);
           if (!delegate.find()) {
             returnValue = false;
+          } else {
+            int index = indexOf(initialThrowable, found);
+            assert index >= 0;
+            if (lastIndex < 0 || index < lastIndex) {
+              found = delegate.getFound();
+            }
+            lastIndex = index;
           }
         }
+      }
+      if (returnValue && lastIndex >= 0) {
+        this.setFound(found);
       }
     }
     if (!returnValue) {
       this.clear();
-    } else {
-      this.setFound(initialThrowable);
     }
     return returnValue;
   }

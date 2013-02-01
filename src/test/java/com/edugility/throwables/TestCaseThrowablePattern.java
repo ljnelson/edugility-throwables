@@ -52,6 +52,7 @@ import static org.junit.Assert.*;
  *
  * @see {@link ThrowablePattern}
  */
+@Deprecated
 public class TestCaseThrowablePattern {
 
   /**
@@ -113,6 +114,22 @@ public class TestCaseThrowablePattern {
   }
 
   @Test
+  public void testNewFinderStuff() throws Exception {
+    final String s = "**/java.lang.RuntimeException";
+    // means: find first matching
+    final ThrowablePattern p = ThrowablePattern.compile(s);
+    assertNotNull(p);
+    final Exception bottom = new Exception("bottom");
+    final RuntimeException middle = new RuntimeException("middle", bottom);
+    final Exception top = new Exception("top", middle);
+    final AbstractThrowableFinder atf = p.finder(top);
+    assertNotNull(atf);
+    assertSame(top, atf.getThrowable());
+    assertNull(atf.getFound());
+    assertTrue(atf.find());
+  }
+
+  @Test
   public void testAnchoredAtEndOnly() throws Exception {
     final String s = "**/java.lang.RuntimeException";
     final ThrowablePattern pattern = ThrowablePattern.compile(s);
@@ -127,6 +144,11 @@ public class TestCaseThrowablePattern {
       assertNotNull(m);
       assertTrue(m.matches());
     }
+
+    final AbstractThrowableFinder atf = pattern.finder(first);
+    assertNotNull(atf);
+    assertTrue(atf.find());
+    assertSame(last, atf.getFound());
   }
 
   @Test

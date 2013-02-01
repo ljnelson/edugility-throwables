@@ -29,6 +29,7 @@ package com.edugility.throwables;
 
 import java.io.Serializable;
 
+@Deprecated
 public abstract class AbstractThrowableFinder implements Cloneable, Serializable {
 
   private static final long serialVersionUID = 1L;
@@ -41,9 +42,27 @@ public abstract class AbstractThrowableFinder implements Cloneable, Serializable
 
   private int exclusiveEndIndex;
 
+  private AbstractThrowableFinder next;
+
   protected AbstractThrowableFinder() {
     super();
     this.clear();
+  }
+
+  protected AbstractThrowableFinder(final AbstractThrowableFinder next) {
+    this();
+    this.setNext(next);
+  }
+
+  public void setNext(final AbstractThrowableFinder next) {
+    this.next = next;
+    if (next != null) {
+      next.clear();
+    }
+  }
+
+  public AbstractThrowableFinder getNext() {
+    return this.next;
   }
 
   @Override
@@ -70,6 +89,10 @@ public abstract class AbstractThrowableFinder implements Cloneable, Serializable
   public void setThrowable(final Throwable throwable) {
     this.clear();
     this.initialThrowable = throwable;
+    final AbstractThrowableFinder next = this.getNext();
+    if (next != null) {
+      next.setThrowable(throwable);
+    }
   }
 
   public Throwable getFound() {
@@ -154,6 +177,32 @@ public abstract class AbstractThrowableFinder implements Cloneable, Serializable
     return this.exclusiveEndIndex;
   }
 
-  public abstract boolean find() throws ThrowableFinderException;
+  protected Throwable getThrowableForNext() {
+    return this.getThrowable();
+  }
+
+  public final boolean find() throws ThrowableFinderException {
+    boolean returnValue = this.findSolo();
+    if (returnValue) {
+      final Throwable found = this.getFound();
+      assert found != null;
+      final AbstractThrowableFinder next = this.getNext();
+      if (next != null) {
+        next.setThrowable(this.getThrowableForNext());
+        returnValue = next.find();
+        if (returnValue) {
+          final Throwable nextFound = next.getFound();
+          assert nextFound != null;
+          final Throwable initialThrowable = this.getThrowable();
+          if (nextFound != found && indexOf(initialThrowable, nextFound) < indexOf(initialThrowable, found)) {
+            this.setFound(nextFound);
+          }
+        }
+      }
+    }
+    return returnValue;
+  }
+
+  protected abstract boolean findSolo() throws ThrowableFinderException;
 
 }

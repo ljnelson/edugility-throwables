@@ -29,6 +29,7 @@ package com.edugility.throwables;
 
 import java.io.Serializable;
 
+@Deprecated
 public class InstanceOfMatchingThrowableFinder extends AbstractThrowableFinder {
 
   private static final long serialVersionUID = 1L;
@@ -52,7 +53,7 @@ public class InstanceOfMatchingThrowableFinder extends AbstractThrowableFinder {
   }
 
   @Override
-  public boolean find() throws ThrowableFinderException {
+  protected boolean findSolo() throws ThrowableFinderException {
     boolean returnValue = false;
     final Throwable t = this.getThrowable();
     if (t != null) {

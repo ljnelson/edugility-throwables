@@ -29,15 +29,17 @@ package com.edugility.throwables;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
+@Deprecated
 public abstract class MultipleDelegateThrowableFinder extends AbstractThrowableFinder {
 
   private static final long serialVersionUID = 1L;
 
-  protected final Set<AbstractThrowableFinder> delegates;
+  protected final LinkedHashSet<AbstractThrowableFinder> delegates;
   
   protected MultipleDelegateThrowableFinder(final AbstractThrowableFinder... delegates) {
     this(delegates == null ? (LinkedHashSet<AbstractThrowableFinder>)null : new LinkedHashSet<AbstractThrowableFinder>(Arrays.asList(delegates)));
@@ -50,7 +52,7 @@ public abstract class MultipleDelegateThrowableFinder extends AbstractThrowableF
   protected MultipleDelegateThrowableFinder(final LinkedHashSet<AbstractThrowableFinder> delegates) {
     super();
     if (delegates == null) {
-      this.delegates = Collections.emptySet();
+      this.delegates = new LinkedHashSet<AbstractThrowableFinder>();
     } else {
       this.delegates = new LinkedHashSet<AbstractThrowableFinder>(delegates);
     }
@@ -68,6 +70,23 @@ public abstract class MultipleDelegateThrowableFinder extends AbstractThrowableF
     if (delegate != null && this.delegates != null && !this.delegates.isEmpty()) {
       this.delegates.remove(delegate);
     }
+  }
+
+  public AbstractThrowableFinder popDelegate() {
+    AbstractThrowableFinder delegate = null;
+    if (this.delegates != null && !this.delegates.isEmpty()) {
+      final Iterator<AbstractThrowableFinder> iterator = this.delegates.iterator();
+      if (iterator != null) {
+        while (iterator.hasNext()) {
+          delegate = iterator.next();
+          if (!iterator.hasNext()) {
+            iterator.remove();
+            break;
+          }
+        }
+      }
+    }
+    return delegate;
   }
 
   @Override

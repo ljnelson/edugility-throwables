@@ -43,10 +43,30 @@ import org.junit.Test;
 
 import static org.junit.Assert.*;
 
+@Deprecated
 public class TestCaseThrowableFinders {
 
   public TestCaseThrowableFinders() {
     super();
+  }
+
+  @Test
+  public void testCauseMatching() throws Exception {
+    final ClassNameMatchingThrowableFinder cf = new ClassNameMatchingThrowableFinder("java.lang.Exception");
+    final CauseMatchingThrowableFinder tf = new CauseMatchingThrowableFinder(cf);
+    
+    final Exception bottom = new Exception("bottom");
+    final Exception top = new Exception("top", bottom);
+    tf.setThrowable(top);
+    assertTrue(tf.find());
+    assertSame(bottom, tf.getFound());
+
+    tf.setThrowable(null);
+    assertFalse(tf.find());
+
+    tf.setThrowable(bottom);
+    assertFalse(tf.find());
+    
   }
 
   @Test
@@ -147,12 +167,16 @@ public class TestCaseThrowableFinders {
   public void testLastMatching() throws Exception {
     final ClassNameMatchingThrowableFinder f1 = new ClassNameMatchingThrowableFinder("java.lang.Exception");
     final LastMatchingThrowableFinder f2 = new LastMatchingThrowableFinder(f1);
+
     final Exception e = new Exception("bottom");
-    final RuntimeException re = new RuntimeException("middle", e);
+    final Exception almostBottom = new Exception("almostBottom", e);
+    final RuntimeException re = new RuntimeException("middle", almostBottom);
     final IllegalArgumentException iae = new IllegalArgumentException("top", re);
+
     f2.setThrowable(iae);
     assertTrue(f2.find());
     assertSame(e, f2.getFound());
+
     f2.setThrowable(e);
     assertTrue(f2.find());
     assertSame(e, f2.getFound());

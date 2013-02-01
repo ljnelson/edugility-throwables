@@ -27,16 +27,21 @@
  */
 package com.edugility.throwables;
 
+@Deprecated
 public class LastMatchingThrowableFinder extends SingleDelegateThrowableFinder {
 
   private static final long serialVersionUID = 1L;
   
+  public LastMatchingThrowableFinder() {
+    super();
+  }
+
   public LastMatchingThrowableFinder(final AbstractThrowableFinder delegate) {
     super(delegate);
   }
 
   @Override
-  public boolean find() throws ThrowableFinderException {
+  protected boolean findSolo() throws ThrowableFinderException {
     boolean returnValue = false;
     final AbstractThrowableFinder delegate = this.getDelegate();
     if (delegate != null) {

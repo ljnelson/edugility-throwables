@@ -27,6 +27,7 @@
  */
 package com.edugility.throwables;
 
+@Deprecated
 public abstract class SingleDelegateThrowableFinder extends AbstractThrowableFinder {
 
   private static final long serialVersionUID = 1L;
@@ -42,7 +43,7 @@ public abstract class SingleDelegateThrowableFinder extends AbstractThrowableFin
     if (delegate == null) {
       throw new IllegalArgumentException("delegate");
     }
-    this.delegate = delegate;
+    this.setDelegate(delegate);
     this.clear();
   }
 

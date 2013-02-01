@@ -59,6 +59,11 @@
   <dependencyManagement>
     <dependencies>
       <dependency>
+        <groupId>com.edugility</groupId>
+        <artifactId>edugility-nfa</artifactId>
+        <version>${edugilityNfaVersion}</version>
+      </dependency>
+      <dependency>
         <groupId>junit</groupId>
         <artifactId>junit</artifactId>
         <version>${junitVersion}</version>
@@ -232,10 +237,11 @@
   <properties>
 
     <!-- Versions -->
+    <edugilityNfaVersion>2.0.0-SNAPSHOT</edugilityNfaVersion>
     <junitVersion>4.10</junitVersion>
     <mavenAssemblyPluginVersion>2.2.1</mavenAssemblyPluginVersion>
     <mavenCleanPluginVersion>2.4.1</mavenCleanPluginVersion>
-    <mavenCompilerPluginVersion>2.3.2</mavenCompilerPluginVersion>
+    <mavenCompilerPluginVersion>2.5.1</mavenCompilerPluginVersion>
     <mavenDependencyPluginVersion>2.3</mavenDependencyPluginVersion>
     <mavenEnforcerPluginVersion>1.0.1</mavenEnforcerPluginVersion>
     <mavenGpgPluginVersion>1.4</mavenGpgPluginVersion>
@@ -250,7 +256,7 @@
     <mavenScmProviderGitexeVersion>${mavenScmPluginVersion}</mavenScmProviderGitexeVersion>
     <mavenSitePluginVersion>3.0</mavenSitePluginVersion>
     <mavenSourcePluginVersion>2.1.2</mavenSourcePluginVersion>
-    <mavenSurefirePluginVersion>2.10</mavenSurefirePluginVersion>
+    <mavenSurefirePluginVersion>2.12.3</mavenSurefirePluginVersion>
     <mvelVersion>2.0.19</mvelVersion>
     <versionsMavenPluginVersion>1.2</versionsMavenPluginVersion>
 

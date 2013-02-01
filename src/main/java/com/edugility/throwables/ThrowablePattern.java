@@ -61,7 +61,10 @@ public final class ThrowablePattern implements Serializable {
 
   private static final String LS = System.getProperty("line.separator", "\n");
 
+  @Deprecated
   private final ConjunctiveThrowableMatcher matcher;
+
+  private AbstractThrowableFinder finder;
 
   private enum State {
     START,
@@ -94,12 +97,22 @@ public final class ThrowablePattern implements Serializable {
    * {@code null} (rather uselessly)
    *
    * @return a {@link ThrowableMatcher}; never {@code null}
+   *
+   * @deprecated For now; slowly rewriting; see #finder(Throwable)
    */
+  @Deprecated
   public final ThrowableMatcher matcher(final Throwable throwableChain) {
     final ConjunctiveThrowableMatcher result = this.matcher.clone();
     assert result != null;
     result.setThrowable(throwableChain);
     return result;
+  }
+
+  public final AbstractThrowableFinder finder(final Throwable throwableChain) {
+    final AbstractThrowableFinder finder = this.finder.clone();
+    assert finder != null;
+    finder.setThrowable(throwableChain);
+    return finder;
   }
 
   /**
@@ -183,6 +196,10 @@ public final class ThrowablePattern implements Serializable {
    * reason
    */
   public static final ThrowablePattern compile(final String pattern, ClassLoader loader) throws ClassNotFoundException, IOException {
+
+    if (pattern == null) {
+      throw new IllegalArgumentException("pattern", new NullPointerException("pattern"));
+    }
 
     if (loader == null) {
       loader = Thread.currentThread().getContextClassLoader();
@@ -459,8 +476,8 @@ public final class ThrowablePattern implements Serializable {
 
         case '$':
           parsingState.identifierEnd();
-          parsingState.classNameMatchTest();
           parsingState.rightAnchor();
+          parsingState.classNameMatchTest();
           parsingState.state = State.END;
           break;
 
@@ -582,7 +599,9 @@ public final class ThrowablePattern implements Serializable {
     }
 
     final ConjunctiveThrowableMatcher matcher = parsingState.matchers.clone();
-    return new ThrowablePattern(matcher);
+    final ThrowablePattern p = new ThrowablePattern(matcher);
+    p.finder = parsingState.rootFinder.clone();
+    return p;
   }
 
   /**
@@ -1108,6 +1127,12 @@ public final class ThrowablePattern implements Serializable {
 
     private final ConjunctiveThrowableMatcher matchers;
 
+    private AbstractThrowableFinder rootFinder;
+
+    private AbstractThrowableFinder finder;
+
+    private AbstractThrowableFinder lastFinder;
+
     private final String pattern;
 
     private final Reader reader;
@@ -1149,11 +1174,13 @@ public final class ThrowablePattern implements Serializable {
       // this.position = 0;
       this.buffer.setLength(0);
       this.depthLevel = 0;
+      this.finder = null;
       this.greedyGlob = false;
       this.leftAnchor = true; // XXX TODO FIXME for now
       this.periodCount = 0;
       this.priorState = null;
       this.rightAnchor = false;
+      this.rootFinder = null;
       this.state = State.START;
     }
 
@@ -1163,12 +1190,64 @@ public final class ThrowablePattern implements Serializable {
 
     private final void rightAnchor() {
       this.rightAnchor = true;
+      final AbstractThrowableFinder finder = this.popFinder();
+      final ConjunctiveThrowableFinder newFinder = new ConjunctiveThrowableFinder(finder);
+      newFinder.addDelegate(new CauselessThrowableFinder());
+      this.pushFinder(newFinder);
     }
 
     private final void newElementMatcher(final ThrowableMatcher delegate) {
       this.matchers.add(new ThrowableListElementThrowableMatcher(this.depthLevel, delegate));
     }
 
+    private final AbstractThrowableFinder initRootFinder() {
+      // this.finder is a SingleDelegateThrowableFinder.  He may or
+      // may not be our root finder.
+      if (this.finder == null) {
+        this.finder = new CauseMatchingThrowableFinder();
+      }
+
+      if (this.rootFinder == null) {
+        if (!this.leftAnchor) {
+          // Analogous to, e.g., /^.*?Q/
+          this.rootFinder = new FirstMatchingThrowableFinder(this.finder);
+        } else {
+          // Analogous to, e.g. /^Q/
+          this.rootFinder = this.finder;
+        }
+      }
+      return this.finder;
+    }
+
+    private final void pushFinder(final AbstractThrowableFinder finder) {
+      this.initRootFinder();
+      assert this.finder != null;
+      if (this.finder instanceof SingleDelegateThrowableFinder) {
+        ((SingleDelegateThrowableFinder)this.finder).setDelegate(finder);
+        this.finder = ((SingleDelegateThrowableFinder)this.finder).getDelegate();
+      }
+    }
+
+    private final AbstractThrowableFinder popFinder() {
+      AbstractThrowableFinder returnValue = null;
+      AbstractThrowableFinder lastFinder = null;
+      AbstractThrowableFinder currentFinder = this.rootFinder;
+      while (currentFinder != null && currentFinder instanceof SingleDelegateThrowableFinder && ((SingleDelegateThrowableFinder)currentFinder).getDelegate() != null) {
+        lastFinder = currentFinder;
+        if (currentFinder instanceof SingleDelegateThrowableFinder) {
+          currentFinder = ((SingleDelegateThrowableFinder)currentFinder).getDelegate();
+        } else {
+          currentFinder = null;
+        }
+      }
+      if (lastFinder == null) {
+        assert currentFinder == this.rootFinder;
+      } else if (lastFinder instanceof SingleDelegateThrowableFinder) {
+        returnValue = ((SingleDelegateThrowableFinder)lastFinder).getDelegate();
+        ((SingleDelegateThrowableFinder)lastFinder).setDelegate(null);
+      }
+      return returnValue;
+    }
 
     private final void ellipsis() {
       
@@ -1194,13 +1273,16 @@ public final class ThrowablePattern implements Serializable {
       
     }
 
-    @SuppressWarnings("unchecked")
     private final void subclassTest(final ClassLoader loader) throws ClassNotFoundException {
-      this.newElementMatcher(new InstanceOfThrowableMatcher((Class<? extends Throwable>)loader.loadClass(this.buffer.toString())));
+      @SuppressWarnings("unchecked")
+      final Class<? extends Throwable> c = (Class<? extends Throwable>)loader.loadClass(this.buffer.toString());
+      this.newElementMatcher(new InstanceOfThrowableMatcher(c));
+      this.pushFinder(new InstanceOfMatchingThrowableFinder(c));
     }
 
     private final void classNameMatchTest() {
       this.newElementMatcher(new ClassNameEqualityThrowableMatcher(this.buffer.toString()));
+      this.pushFinder(new ClassNameMatchingThrowableFinder(this.buffer.toString()));
     }
 
     private final void slash() {
@@ -1248,6 +1330,7 @@ public final class ThrowablePattern implements Serializable {
     private final void greedyGlob() {
       this.greedyGlob = true;
       this.depthLevel = 0;
+      this.pushFinder(new LastMatchingThrowableFinder());
     }
 
     private final void reluctantGlob() {
@@ -1280,6 +1363,7 @@ public final class ThrowablePattern implements Serializable {
     
     private final void propertyBlockEnd() {
       this.newElementMatcher(new PropertyBlockThrowableMatcher(this.buffer.toString()));
+      this.pushFinder(new MVELExpressionMatchingThrowableFinder(this.buffer.toString()));
     }
 
 

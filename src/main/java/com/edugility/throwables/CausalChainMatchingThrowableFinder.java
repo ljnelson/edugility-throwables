@@ -33,6 +33,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
+@Deprecated
 public class CausalChainMatchingThrowableFinder extends MultipleDelegateThrowableFinder {
 
   private static final long serialVersionUID = 1L;
@@ -50,7 +51,7 @@ public class CausalChainMatchingThrowableFinder extends MultipleDelegateThrowabl
   }
 
   @Override
-  public boolean find() throws ThrowableFinderException {
+  protected boolean findSolo() throws ThrowableFinderException {
     final Throwable initialThrowable = this.getThrowable();
     boolean returnValue = this.delegates != null && !this.delegates.isEmpty() && initialThrowable != null;
     if (returnValue) {

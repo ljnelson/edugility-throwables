@@ -33,6 +33,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
+@Deprecated
 public class DisjunctiveThrowableFinder extends MultipleDelegateThrowableFinder {
 
   private static final long serialVersionUID = 1L;
@@ -50,7 +51,7 @@ public class DisjunctiveThrowableFinder extends MultipleDelegateThrowableFinder 
   }
 
   @Override
-  public boolean find() throws ThrowableFinderException {
+  protected boolean findSolo() throws ThrowableFinderException {
     boolean returnValue = false;
     Throwable initialThrowable = this.getThrowable();
     if (initialThrowable != null && this.delegates != null && !this.delegates.isEmpty()) {

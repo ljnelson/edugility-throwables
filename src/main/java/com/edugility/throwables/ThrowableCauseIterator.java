@@ -1,6 +1,6 @@
-/* -*- mode: Java; c-basic-offset: 2; indent-tabs-mode: nil -*-
+/* -*- mode: Java; c-basic-offset: 2; indent-tabs-mode: nil; coding: utf-8-unix -*-
  *
- * Copyright (c) 2011 Edugility LLC.
+ * Copyright (c) 2011-2013 Edugility LLC.
  *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
@@ -38,7 +38,7 @@ import java.util.NoSuchElementException;
  *
  * @since 1.0-SNAPSHOT
  */
-public final class ThrowableCauseIterator implements Iterable<Throwable>, Iterator<Throwable> {
+public final class ThrowableCauseIterator implements Cloneable, Iterable<Throwable>, Iterator<Throwable> {
   
   /*
    * Note to self and future maintainers: Please do not get clever and
@@ -75,13 +75,15 @@ public final class ThrowableCauseIterator implements Iterable<Throwable>, Iterat
   }
 
   /**
-   * Returns this {@link ThrowableCauseIterator}.
+   * Returns a {@linkplain #clone() clone} of this {@link
+   * ThrowableCauseIterator}.
    *
-   * @return this {@link ThrowableCauseIterator}
+   * @return a non-{@code null} {@linkplain #clone() clone} of this
+   * {@link ThrowableCauseIterator}
    */
   @Override
-  public final Iterator<Throwable> iterator() {
-    return this;
+  public Iterator<Throwable> iterator() {
+    return this.clone();
   }
 
   /**
@@ -129,6 +131,26 @@ public final class ThrowableCauseIterator implements Iterable<Throwable>, Iterat
   }
 
   /**
+   * Returns a simple, shallow clone of this {@link
+   * ThrowableCauseIterator}.  The clone's state is then reset.
+   *
+   * @return a non-{@code null} clone of this {@link
+   * ThrowableCauseIterator} initialized to its starting state
+   */
+  @Override
+  public ThrowableCauseIterator clone() {
+    ThrowableCauseIterator clone = null;
+    try {
+      clone = (ThrowableCauseIterator)super.clone();
+      assert clone != null;
+    } catch (final CloneNotSupportedException cantHappen) {
+      throw (InternalError)new InternalError().initCause(cantHappen);
+    }
+    clone.notYetStarted = true;
+    return clone;
+  }
+
+  /**
    * Returns the {@link String} representation of the {@link
    * Throwable} that was supplied to this {@link
    * ThrowableCauseIterator}'s {@linkplain
@@ -139,8 +161,8 @@ public final class ThrowableCauseIterator implements Iterable<Throwable>, Iterat
    * ThrowableCauseIterator}; never {@code null}
    */
   @Override
-  public final String toString() {
-    return String.valueOf(this.t);
+  public String toString() {
+    return this.t == null ? "null" : this.t.toString();
   }
 
 }
