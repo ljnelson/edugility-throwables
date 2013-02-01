@@ -1,4 +1,4 @@
-/* -*- mode: Java; c-basic-offset: 2; indent-tabs-mode: nil -*-
+/* -*- mode: Java; c-basic-offset: 2; indent-tabs-mode: nil; coding: utf-8-unix -*-
  *
  * Copyright (c) 2010-2012 Edugility LLC.
  *
