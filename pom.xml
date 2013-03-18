@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?><!-- $Id: pom.xml 336 2011-02-26 22:20:22Z ljnelson $ -->
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:Xlint="urn:javac" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
   <prerequisites>
@@ -133,6 +133,11 @@
         </plugin>
 
         <plugin>
+          <artifactId>maven-deploy-plugin</artifactId>
+          <version>${mavenDeployPluginVersion}</version>
+        </plugin>
+
+        <plugin>
           <artifactId>maven-enforcer-plugin</artifactId>
           <version>${mavenEnforcerPluginVersion}</version>
         </plugin>
@@ -143,6 +148,11 @@
         </plugin>
 
         <plugin>
+          <artifactId>maven-install-plugin</artifactId>
+          <version>${mavenInstallPluginVersion}</version>
+        </plugin>
+
+        <plugin>
           <artifactId>maven-jar-plugin</artifactId>
           <version>${mavenJarPluginVersion}</version>
         </plugin>
@@ -150,11 +160,6 @@
         <plugin>
           <artifactId>maven-javadoc-plugin</artifactId>
           <version>${mavenJavadocPluginVersion}</version>
-        </plugin>
-
-        <plugin>
-          <artifactId>maven-plugin-plugin</artifactId>
-          <version>${mavenPluginPluginVersion}</version>
         </plugin>
 
         <plugin>
@@ -237,21 +242,22 @@
     <mavenAssemblyPluginVersion>2.4</mavenAssemblyPluginVersion>
     <mavenCleanPluginVersion>2.5</mavenCleanPluginVersion>
     <mavenCompilerPluginVersion>3.0</mavenCompilerPluginVersion>
-    <mavenDependencyPluginVersion>2.6</mavenDependencyPluginVersion>
+    <mavenDependencyPluginVersion>2.7</mavenDependencyPluginVersion>
+    <mavenDeployPluginVersion>2.7</mavenDeployPluginVersion>
     <mavenEnforcerPluginVersion>1.2</mavenEnforcerPluginVersion>
     <mavenGpgPluginVersion>1.4</mavenGpgPluginVersion>
+    <mavenInstallPluginVersion>2.4</mavenInstallPluginVersion>
     <mavenJarPluginVersion>2.4</mavenJarPluginVersion>
     <mavenJavadocPluginVersion>2.9</mavenJavadocPluginVersion>
-    <mavenPluginPluginVersion>2.9</mavenPluginPluginVersion>
-    <mavenProjectInfoReportsPlugin>2.4</mavenProjectInfoReportsPlugin>
+    <mavenProjectInfoReportsPlugin>2.6</mavenProjectInfoReportsPlugin>
     <mavenReleasePluginVersion>2.4</mavenReleasePluginVersion>
     <mavenResourcesPluginVersion>2.6</mavenResourcesPluginVersion>
     <mavenScmManagerPlexusVersion>${mavenScmPluginVersion}</mavenScmManagerPlexusVersion>
-    <mavenScmPluginVersion>1.5</mavenScmPluginVersion>
+    <mavenScmPluginVersion>1.8.1</mavenScmPluginVersion>
     <mavenScmProviderGitexeVersion>${mavenScmPluginVersion}</mavenScmProviderGitexeVersion>
     <mavenSitePluginVersion>3.2</mavenSitePluginVersion>
-    <mavenSourcePluginVersion>2.1.2</mavenSourcePluginVersion>
-    <mavenSurefirePluginVersion>2.13</mavenSurefirePluginVersion>
+    <mavenSourcePluginVersion>2.2.1</mavenSourcePluginVersion>
+    <mavenSurefirePluginVersion>2.14</mavenSurefirePluginVersion>
     <mvelVersion>2.1.3.Final</mvelVersion>
     <versionsMavenPluginVersion>2.0</versionsMavenPluginVersion>
 
@@ -271,7 +277,7 @@
     <maven.resources.escapeString>\</maven.resources.escapeString>
 
     <!-- maven-site-plugin Properties -->
-    <maven.site.deploy.skip>false</maven.site.deploy.skip>
+    <maven.site.deploy.skip>true</maven.site.deploy.skip>
 
     <!-- maven-javadoc-plugin Properties -->
     <detectLinks>false</detectLinks>
