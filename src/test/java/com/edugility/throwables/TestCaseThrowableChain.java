@@ -69,7 +69,8 @@ public class TestCaseThrowableChain {
     assertTrue(i.hasNext());
     Throwable t = i.next();
 
-    // The first item in the iteration is the ThrowableChain itself.
+    // The first item in the iteration is always the ThrowableChain
+    // itself.
     assertSame(this.chain, t);
 
     assertTrue(i.hasNext());
@@ -95,7 +96,7 @@ public class TestCaseThrowableChain {
     assertEquals(1, chain.size());
     assertTrue(chain.getCause() == null);
 
-    // Initializing a chain's cause does not actually add that cause
+    // Initializing a chain's cause must not actually add that cause
     // to the list or alter the chain's size.
     final Exception cause = new Exception("cause");
     chain.initCause(cause);
@@ -103,7 +104,8 @@ public class TestCaseThrowableChain {
     assertEquals(1, chain.size());
     assertFalse(chain.asList().contains(cause));
     
-    // Removal has no effect on the cause.
+    // Removal has no effect on the cause.  Once a cause is installed,
+    // it is there forever.
     assertFalse(chain.remove(cause));
     assertEquals(1, chain.size());
     assertSame(cause, chain.getCause());
@@ -115,6 +117,7 @@ public class TestCaseThrowableChain {
     assertFalse(chain.add(cause));
     assertEquals(1, chain.size());
     assertFalse(chain.asList().contains(cause));
+    assertSame(cause, chain.getCause());
 
     // Adding subsequent items affects the list but does not affect
     // the cause.

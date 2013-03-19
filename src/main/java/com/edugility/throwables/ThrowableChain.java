@@ -40,10 +40,11 @@ import java.util.concurrent.CopyOnWriteArrayList;
 /**
  * An {@link Exception} (and an implementation of the {@link
  * Collection} interface) that also holds a modifiable list of other
- * {@link Throwable}s that are not connected to the direct {@linkplain
- * Throwable#getCause() causal chain}, but are affiliated nonetheless.
- * Instances of this class are particularly useful when dealing with
- * {@link Throwable}s in {@code finally} blocks.
+ * <em>affiliated</em> {@link Throwable}s that are not connected to
+ * the direct {@linkplain Throwable#getCause() causal chain}, but are
+ * related in some way nonetheless.  Instances of this class are
+ * particularly useful when dealing with {@link Throwable}s in {@code
+ * finally} blocks.
  *
  * <p>A {@link ThrowableChain} always contains itself, so the return
  * value of its {@link #size()} method is always at least {@code
@@ -51,6 +52,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
  *
  * @author <a href="http://about.me/lairdnelson"
  * target="_parent">Laird Nelson</a>
+ *
+ * @see ThrowableList
  */
 public class ThrowableChain extends Exception implements Collection<Throwable> {
 
@@ -61,10 +64,10 @@ public class ThrowableChain extends Exception implements Collection<Throwable> {
   private static final long serialVersionUID = 1L;
 
   /**
-   * The {@link List} containing additional {@link Throwable}s.  This
-   * field is never {@code null} and never {@linkplain List#isEmpty()
-   * empty} and <strong>always contains this {@link ThrowableChain}
-   * itself as its first element</strong>.
+   * The {@link List} containing additional affiliated {@link
+   * Throwable}s.  This field is never {@code null} and never
+   * {@linkplain List#isEmpty() empty} and <strong>always contains
+   * this {@link ThrowableChain} itself as its first element</strong>.
    */
   private final CopyOnWriteArrayList<Throwable> list;
 
@@ -85,8 +88,7 @@ public class ThrowableChain extends Exception implements Collection<Throwable> {
    */
   public ThrowableChain(final String message, final Throwable cause) {
     super(message);
-    this.list = new CopyOnWriteArrayList<Throwable>();
-    this.list.add(this);
+    this.list = new CopyOnWriteArrayList<Throwable>(Collections.singleton(this));
     if (cause != null) {
       this.initCause(cause);
     }
@@ -126,16 +128,28 @@ public class ThrowableChain extends Exception implements Collection<Throwable> {
    * {@linkplain #initCause(Throwable) cause is initialized} to the
    * supplied {@link Throwable}.  Otherwise, the supplied {@link
    * Throwable} is added to this {@link ThrowableChain}'s {@linkplain
-   * #asList() list of affiliated <tt>Throwable</tt>s}.</p>
+   * #asList() list of affiliated <code>Throwable</code>s}.  The
+   * rationale for this behavior is that if a {@link ThrowableChain}
+   * is being brought into existence at all, it is going to be caused
+   * by something, and the first {@link Throwable} that is affiliated
+   * with this {@link ThrowableChain} is therefore deemed to be its
+   * cause as well.  Please note that the reverse behavior is
+   * <em>not</em> true&mdash;that is, the {@link
+   * Throwable#initCause(Throwable)} method, when invoked on this
+   * {@link ThrowableChain} directly or via the {@linkplain
+   * #ThrowableChain(String, Throwable) relevant constructor}, does
+   * not cause the instigating {@link Throwable} to be added to this
+   * {@link ThrowableChain}'s list of <em>affiliated</em> {@link
+   * Throwable}s.</p>
    *
    * <p>Under no circumstances are the supplied {@link Throwable}'s
    * {@linkplain Throwable#getCause() cause} or any transitive causes
-   * added to this {@link ThrowableChain}'s {@linkplain
-   * #asList() list of affiliated <tt>Throwable</tt>s}.</p>
+   * added to this {@link ThrowableChain}'s {@linkplain #asList() list
+   * of affiliated <code>Throwable</code>s}.</p>
    *
    * <p>If the supplied {@link Throwable} is already contained in this
    * {@link ThrowableChain}'s {@linkplain #asList() list of affiliated
-   * <tt>Throwable</tt>s}, then no action is taken.</p>
+   * <code>Throwable</code>s}, then no action is taken.</p>
    *
    * @param throwable the {@link Throwable} to add; may be {@code
    * null} in which case no action will be taken
@@ -149,12 +163,10 @@ public class ThrowableChain extends Exception implements Collection<Throwable> {
     assert this.list != null;
     if (throwable != null && throwable != this) {
       final Throwable cause = this.getCause();
-      if (throwable != cause) {
-        if (cause == null) {
-          this.initCause(throwable);
-        } else {
-          returnValue = this.list.addIfAbsent(throwable);
-        }
+      if (cause == null) {
+        this.initCause(throwable);
+      } else if (throwable != cause) {
+        returnValue = this.list.addIfAbsent(throwable);
       }
     }
     return returnValue;
@@ -366,6 +378,10 @@ public class ThrowableChain extends Exception implements Collection<Throwable> {
    * identical to the {@link List} instances returned by the {@link
    * Collections#unmodifiableList(List)} method.
    *
+   * <p>Please note that this method does <em>not</em> return a {@link
+   * List} view of the {@linkplain Throwable#getCause() causal chain}
+   * of this {@link ThrowableChain}.</p>
+   *
    * @return a read-only {@link List} view of this {@link
    * ThrowableChain} and the underlying list of affiliated {@link
    * Throwable}s; never {@code null}
@@ -382,6 +398,8 @@ public class ThrowableChain extends Exception implements Collection<Throwable> {
    * behaviorally identical to the {@link List} instances returned by
    * the {@link Collections#unmodifiableList(List)} and to
    * <em>not</em> contain this {@link ThrowableChain}.
+   *
+   * <p>This method never returns {@code null}.</p>
    *
    * @return an immutable {@link List} of this {@link
    * ThrowableChain}'s affiliates; never {@code null}
@@ -412,7 +430,7 @@ public class ThrowableChain extends Exception implements Collection<Throwable> {
 
   /**
    * Returns an {@link Iterator} that can be used to iterate over all
-   * {@linkplain #add(Throwable) contained <tt>Throwable</tt>s}.
+   * {@linkplain #add(Throwable) affiliated <code>Throwable</code>s}.
    *
    * <p>This method never returns {@code null}.</p>
    *
@@ -433,12 +451,12 @@ public class ThrowableChain extends Exception implements Collection<Throwable> {
 
   /**
    * <p>Prints the stack trace of this {@link ThrowableChain} and then
-   * of every {@linkplain #iterator() <tt>Throwable</tt> contained by
-   * it}.  Each stack trace is preceded by the following text (quoted
-   * here; the quotation marks are not part of the text):
-   * "<tt><i>d</i>. </tt>" <i>d</i> in the preceding text fragment is
-   * substituted with the ordinal position, starting with {@code 1},
-   * of the {@link Throwable} in question.</p>
+   * of every {@linkplain #iterator() <code>Throwable</code>
+   * affiliated with it}.  Each stack trace is preceded by the
+   * following text (quoted here; the quotation marks are not part of
+   * the text): "<code><i>d</i>. </code>" <i>d</i> in the preceding
+   * text fragment is substituted with the ordinal position, starting
+   * with {@code 1}, of the {@link Throwable} in question.</p>
    *
    * @param s the {@link PrintStream} to print to; must not be {@code
    * null}
@@ -472,12 +490,12 @@ public class ThrowableChain extends Exception implements Collection<Throwable> {
 
   /**
    * <p>Prints the stack trace of this {@link ThrowableChain} and then
-   * of every {@linkplain #iterator() <tt>Throwable</tt> contained by
-   * it}.  Each stack trace is preceded by the following text (quoted
-   * here; the quotation marks are not part of the text):
-   * "<tt><i>d</i>. </tt>" <i>d</i> in the preceding text fragment is
-   * substituted with the ordinal position, starting with {@code 1},
-   * of the {@link Throwable} in question.</p>
+   * of every {@linkplain #iterator() <code>Throwable</code> contained
+   * by it}.  Each stack trace is preceded by the following text
+   * (quoted here; the quotation marks are not part of the text):
+   * "<code><i>d</i>. </code>" <i>d</i> in the preceding text fragment
+   * is substituted with the ordinal position, starting with {@code
+   * 1}, of the {@link Throwable} in question.</p>
    *
    * @param w the {@link PrintWriter} to print to; must not be {@code
    * null}

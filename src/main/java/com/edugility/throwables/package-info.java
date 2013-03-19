@@ -30,8 +30,7 @@
  * Provides classes and interfaces useful for working with {@link
  * java.lang.Throwable}s.
  *
- * @author <a href="mailto:ljnelson@gmail.com">Laird Nelson</a>
- *
- * @since 1.0-SNAPSHOT
+ * @author <a href="http://about.me/lairdnelson"
+ * target="_parent">Laird Nelson</a>
  */
 package com.edugility.throwables;

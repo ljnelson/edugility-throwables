@@ -70,9 +70,9 @@ public final class Throwables {
   }
 
   /**
-   * Creates and returns a somewhat esoteric view of the supplied
-   * {@link Throwable} and its {@linkplain Throwable#getCause() causal
-   * chain} as a {@link List}.
+   * Creates and returns <strong>a somewhat esoteric view</strong> of
+   * the supplied {@link Throwable} and its {@linkplain
+   * Throwable#getCause() causal chain} as a {@link List}.
    *
    * <p>In the simplest case, where the supplied {@link Throwable}
    * itself does not implement the {@link Iterable} interface, the
@@ -241,83 +241,14 @@ public final class Throwables {
    * an instance of the supplied {@link Class}, or {@code null}
    */
   public static final <T extends Throwable> T firstInstance(Throwable t, final Class<T> throwableClass) {
-    @SuppressWarnings("unchecked")
-    final T returnValue = (T)nthInstance(t, new InstanceOfPredicate(throwableClass), 0);
-    return returnValue;
-  }
-
-  /**
-   * Returns a {@link Throwable} in the {@linkplain
-   * Throwable#getCause() causal chain} of the supplied {@link
-   * Throwable} (or the supplied {@link Throwable} itself) that is the
-   * appropriate instance of the supplied {@link Class}.
-   *
-   * <p>This method may return {@code null}.</p>
-   *
-   * @param throwable the {@link Throwable} whose causal chain should
-   * be investigated; may be {@code null} in which case {@code null}
-   * will be returned
-   *
-   * @param throwableClass the {@link Class} whose {@link
-   * Class#isInstance(Object)} method will be called; if {@code null}
-   * then {@code null} will be returned
-   *
-   * @param zeroBasedOccurrence the {@code 0}-based number that
-   * identifies which of the potentially many matches to return.
-   * {@code 0} will return the first {@link Throwable} that matches,
-   * {@code 1} will return the second one, and so on.
-   *
-   * @return the <i>n</i><sup>th</sup> {@link Throwable} in the
-   * causal chain that is an instance of the supplied {@link Class},
-   * or {@code null}
-   */
-  public static final <T extends Throwable> T nthInstance(Throwable throwable, final Class<T> throwableClass, int zeroBasedOccurrence) {
-    @SuppressWarnings("unchecked")
-    final T returnValue = (T)nthInstance(throwable, new InstanceOfPredicate(throwableClass), zeroBasedOccurrence);
-    return returnValue;
-  }
-
-  /**
-   * Returns the <i>n</i><sup>th</sup> occurrence of a {@link
-   * Throwable}&mdash;in the supplied {@link Throwable}'s {@linkplain
-   * Throwable#getCause() causal chain}&mdash;that is {@linkplain
-   * Throwables.Predicate#apply(Throwable) accepted by the supplied
-   * <tt>Predicate</tt>}, where <i>n</i> is equal to the supplied
-   * {@code zeroBasedOccurrence} parameter value plus one.
-   *
-   * <p>This method may return {@code null}.</p>
-   * 
-   * @param throwable the {@link Throwable} to investigate; may be
-   * {@code null} in which case {@code null} will be returned
-   * 
-   * @param predicate the {@link Throwables.Predicate} to use to
-   * evaluate fitness; may be {@code null} in which case this method
-   * will behave as though a {@link Throwables.Predicate} had been
-   * supplied to it that returns {@code true} in all cases from its
-   * {@link Throwables.Predicate#apply(Throwable)} method
-   *
-   * @param zeroBasedOccurrence which occurrence to return, starting
-   * at {@code 0}
-   * 
-   * @return the {@code zeroBasedOccurrence + 1}<sup>th</sup>
-   * occurrence of a {@link Throwable}&mdash;in the supplied {@link
-   * Throwable}'s {@linkplain Throwable#getCause() causal
-   * chain}&mdash;that is {@linkplain
-   * Throwables.Predicate#apply(Throwable) accepted by the supplied
-   * <tt>Predicate</tt>}
-   */
-  public static final Throwable nthInstance(Throwable throwable, final Predicate predicate, int zeroBasedOccurrence) {
-    zeroBasedOccurrence = Math.max(0, zeroBasedOccurrence);
-    Throwable returnValue = null;
-    final List<Throwable> list = toList(throwable);
-    assert list != null;
-    // Note: do not use getCause(); the work has already been done
-    int numberOfOccurrences = 0;
-    for (int i = 0; i < list.size(); i++) {
-      final Throwable t = list.get(i);
-      if (t != null && (predicate == null || predicate.apply(t)) && zeroBasedOccurrence == numberOfOccurrences++) {
-        returnValue = t;
-        break;
+    T returnValue = null;
+    if (throwableClass != null) {
+      while (t != null) {
+        if (throwableClass.isInstance(t)) {
+          returnValue = throwableClass.cast(t);
+          break;
+        }
+        t = t.getCause();
       }
     }
     return returnValue;
@@ -353,94 +284,6 @@ public final class Throwables {
       }
     }
     return returnValue;
-  }
-
-  /**
-   * A predicate that evaluates a {@link Throwable} for some user-defined condition.
-   *
-   * @author <a href="http://about.me/lairdnelson"
-   * target="_parent">Laird Nelson</a>
-   */
-  public static interface Predicate extends Serializable {
-
-    /**
-     * Evaluates the supplied {@link Throwable} for fitness and
-     * returns {@code true} if the supplied {@link Throwable} is
-     * deemed fit.
-     *
-     * @param t the {@link Throwable} in question; may be {@code null}
-     *
-     * @return {@code true} if the supplied {@link Throwable} is fit;
-     * {@code false} otherwise
-     */
-    public boolean apply(final Throwable t);
-
-  }
-
-  /**
-   * A {@link Predicate} that determines whether a {@link Throwable}
-   * is an instance of a given {@link Class}.
-   *
-   * @author <a href="mailto:ljnelson@gmail.com">Laird Nelson</a>
-   *
-   * @since 1.0-SNAPSHOT
-   */
-  private static final class InstanceOfPredicate implements Predicate {
-
-    /**
-     * The version number of the serialized representation of this
-     * class.
-     *
-     * @see java.io.Serializable
-     */
-    private static final long serialVersionUID = 1L;
-
-    /**
-     * The {@link Class} to use for the test.
-     *
-     * <p>This field may be {@code null}.</p>
-     */
-    private final Class<? extends Throwable> cls;
-
-    /**
-     * Creates a new {@link InstanceOfPredicate}.
-     *
-     * @param cls the {@link Class} to use for the predicate test; may
-     * be {@code null}
-     */
-    private InstanceOfPredicate(final Class<? extends Throwable> cls) {
-      super();
-      this.cls = cls;
-    }
-
-    /**
-     * Returns {@code true} if the supplied {@link Throwable} is an
-     * instance of the {@link Class} supplied to this {@link
-     * InstanceOfPredicate}'s {@linkplain
-     * #Throwables.InstanceOfPredicate(Class) constructor}.
-     *
-     * @param t the {@link Throwable} to test; may be {@code null}
-     *
-     * @return {@code true} if the supplied {@link Throwable} is an
-     * instance of the {@link Class} supplied to this {@link
-     * InstanceOfPredicate}'s {@linkplain
-     * #Throwables.InstanceOfPredicate(Class) constructor}; {@code
-     * false} in all other cases
-     */
-    @Override
-    public final boolean apply(final Throwable t) {
-      if (t == null) {
-        return false;
-      }
-      if (this.cls == null) {
-        return false;
-      }
-      if (!this.cls.isInstance(t)) {
-        return false;
-      }
-      return true;
-    }
-
   }
 
 }
