@@ -37,9 +37,8 @@ import java.util.List;
 /**
  * A class to assist with processing {@link Throwable} instances.
  *
- * @author <a href="mailto:ljnelson@gmail.com">Laird Nelson</a>
- *
- * @since 1.0-SNAPSHOT
+ * @author <a href="http://about.me/lairdnelson"
+ * target="_parent">Laird Nelson</a>
  */
 public final class Throwables {
 
@@ -71,9 +70,33 @@ public final class Throwables {
   }
 
   /**
-   * Creates and returns a view of the supplied {@link Throwable} and
-   * its {@linkplain Throwable#getCause() causal chain} as a {@link
-   * List}.
+   * Creates and returns a somewhat esoteric view of the supplied
+   * {@link Throwable} and its {@linkplain Throwable#getCause() causal
+   * chain} as a {@link List}.
+   *
+   * <p>In the simplest case, where the supplied {@link Throwable}
+   * itself does not implement the {@link Iterable} interface, the
+   * {@link List} returned by this method is equal in behavior to
+   * {@link ThrowableList}.</p>
+   *
+   * <p>In the more complicated case where the supplied {@link
+   * Throwable} <em>does</em> implement {@link Iterable}, each {@link
+   * Throwable} in the iteration is added to the {@link List} that
+   * will be returned, followed immediately by {@linkplain
+   * Throwable#getCause() its causal chain}.  {@link
+   * java.sql.SQLException} is an example of a {@link Throwable} that
+   * also implements {@link Iterable}; {@link ThrowableChain} is
+   * another.</p>
+   *
+   * <p>In cases where the {@link Throwable}s returned by an {@link
+   * Iterable} {@link Throwable} are also contained somewhere in a
+   * {@linkplain Throwable#getCause() causal chain}, the returned
+   * {@link List} may contain duplicate elements.</p>
+   *
+   * <p>In general, if you are interested only in viewing the
+   * {@linkplain Throwable#getCause() causal chain} of a given {@link
+   * Throwable} as a {@link List} then creating and using a {@link
+   * ThrowableList} may fit your needs better.</p>
    *
    * <p>This method never returns {@code null}.</p>
    *
@@ -81,14 +104,17 @@ public final class Throwables {
    *
    * @param throwable the {@link Throwable} in question; may be {@code null}
    *
-   * @return a {@link List} of {@link Throwable}s; never {@code null};
-   * the return value will always contain the supplied {@link
+   * @return an {@linkplain Collections#unmodifiableList(List)
+   * unmodifiable} {@link List} of {@link Throwable}s; never {@code
+   * null}; the return value will always contain the supplied {@link
    * Throwable} as its first element unless the supplied {@link
    * Throwable} is {@code null}
+   *
+   * @see ThrowableList
    */
   public static final List<Throwable> toList(final Throwable throwable) {
     final List<Throwable> l = toList(throwable, null);
-    if (l == null) {
+    if (l == null || l.isEmpty()) {
       return Collections.emptyList();
     } else {
       return Collections.unmodifiableList(l);
@@ -141,22 +167,44 @@ public final class Throwables {
         while (iterator.hasNext()) {
           final Object o = iterator.next();
           if (o instanceof Throwable) {
-
             final Throwable t = (Throwable)o;
             found = found || t == throwable;
+
+            // Add the Throwable itself to the list we'll return.
             l.add(t);
 
-            // XXX TODO FIXME: I don't like this.  If a Throwable is
-            // encountered that implements Iterable<Throwable> (like
-            // SQLException) then it should be presumed that the
-            // Throwable is in charge of its own iteration.
+            // XXX TODO FIXME? MAYBE?: I don't like this.  If a
+            // Throwable is encountered that implements
+            // Iterable<Throwable> (like java.sql.SQLException, or
+            // ThrowableChain) then it should be presumed that the
+            // Throwable is fully in charge of its own
+            // iteration...maybe.
             //
-            // Right now, this method does a recursive call to ALSO
-            // walk the causal chain.
+            // On the other hand, the contract for this method says
+            // definitively and explicitly that iteration is over the
+            // *causal chain* (which rules out how ThrowableChain
+            // iterates).  So this might be doing the right thing
+            // after all.
+            //
+            // This method basically takes chains of linked Throwables
+            // and flattens them into a List:
+            // 
+            // ta --> ta' --> ta'' --> ta'''
+            // |
+            // tb --> tb' --> tb''
+            // |
+            // tc --> tc' --> tc'' --> tc'''
+            //
+            // ...becomes:
+            //
+            // ta, ta', ta'', ta''', tb, tb', tb'', tc, tc', tc'', tc'''
 
             final Throwable cause = t.getCause();
             if (cause != null) {
-              assert cause != t; // shouldn't be possible according to Throwable contract
+              assert cause != t; // prevented by Throwable contract
+
+              // Now (recursively) perform this operation on the cause
+              // and ITS cause and so on.
               final List<Throwable> list = toList(cause, l); // recursive call
               assert list == l;
               found = found || l.contains(throwable);
@@ -310,9 +358,8 @@ public final class Throwables {
   /**
    * A predicate that evaluates a {@link Throwable} for some user-defined condition.
    *
-   * @author <a href="mailto:ljnelson@gmail.com">Laird Nelson</a>
-   *
-   * @since 1.0-SNAPSHOT
+   * @author <a href="http://about.me/lairdnelson"
+   * target="_parent">Laird Nelson</a>
    */
   public static interface Predicate extends Serializable {
 

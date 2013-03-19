@@ -56,10 +56,38 @@ public class TestCaseThrowableCauseIterator {
   }
 
   @Test
+  public void testSize() {
+    assertEquals(3, this.iterator.size());
+  }
+
+  @Test(expected = IndexOutOfBoundsException.class)
+  public void testBadGetTooBig() {
+    this.iterator.get(27);
+  }
+
+  @Test(expected = IndexOutOfBoundsException.class)
+  public void testBadGetTooSmall() {
+    this.iterator.get(-1);
+  }
+
+  @Test(expected = IndexOutOfBoundsException.class)
+  public void testGetEdge() {
+    assertEquals(3, this.iterator.size());
+    final Throwable bottom = this.iterator.get(2);
+    assertNotNull(bottom);
+    assertEquals("one", bottom.getMessage());
+    this.iterator.get(3);
+  }
+
+
+  @Test
   public void testIteration() {
     int i = 0;
-    while (this.iterator.hasNext()) {
-      final Throwable next = iterator.next();
+    final Iterator<Throwable> it = this.iterator.iterator();
+    assertNotNull(it);
+
+    while (it.hasNext()) {
+      final Throwable next = it.next();
       assertNotNull(next);
       i++;
     }

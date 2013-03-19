@@ -27,6 +27,7 @@
  */
 package com.edugility.throwables;
 
+import java.util.AbstractList;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
@@ -34,11 +35,10 @@ import java.util.NoSuchElementException;
  * An {@link Iterator} that iterates over a {@link Throwable}'s
  * <i>causal chain</i>.
  *
- * @author <a href="mailto:ljnelson@gmail.com">Laird Nelson</a>
- *
- * @since 1.0-SNAPSHOT
+ * @author <a href="http://about.me/lairdnelson"
+ * target="_parent">Laird Nelson</a>
  */
-public final class ThrowableCauseIterator implements Cloneable, Iterable<Throwable>, Iterator<Throwable> {
+public final class ThrowableCauseIterator extends AbstractList<Throwable> {
   
   /*
    * Note to self and future maintainers: Please do not get clever and
@@ -54,12 +54,6 @@ public final class ThrowableCauseIterator implements Cloneable, Iterable<Throwab
   private Throwable t;
 
   /**
-   * Indicates whether iteration has started.  This field is {@code
-   * true} only before the first call to the {@link #next()} method.
-   */
-  private boolean notYetStarted;
-
-  /**
    * Creates a new {@link ThrowableCauseIterator}.  The first element
    * of this {@link ThrowableCauseIterator}'s iteration will be the
    * supplied {@link Throwable}, followed by its {@linkplain
@@ -70,84 +64,7 @@ public final class ThrowableCauseIterator implements Cloneable, Iterable<Throwab
    */
   public ThrowableCauseIterator(final Throwable t) {
     super();
-    this.notYetStarted = true;
     this.t = t;
-  }
-
-  /**
-   * Returns a {@linkplain #clone() clone} of this {@link
-   * ThrowableCauseIterator}.
-   *
-   * @return a non-{@code null} {@linkplain #clone() clone} of this
-   * {@link ThrowableCauseIterator}
-   */
-  @Override
-  public Iterator<Throwable> iterator() {
-    return this.clone();
-  }
-
-  /**
-   * Returns {@code true} if there is another {@link Throwable} to
-   * return from the {@link #next()} method.
-   *
-   * @return {@code true} if there is another {@link Throwable} to
-   * return from the {@link #next()} method
-   */
-  @Override
-  public final boolean hasNext() {
-    return this.t != null && (this.notYetStarted || this.t.getCause() != null);
-  }
-
-  /**
-   * Returns the next {@link Throwable} in the causal chain.  This
-   * method never returns {@code null}.
-   *
-   * @return the next {@link Throwable} in the causal chain; never
-   * {@code null}
-   *
-   * @exception NoSuchElementException if there are no more elements
-   */
-  @Override
-  public final Throwable next() {
-    if (this.notYetStarted) {
-      this.notYetStarted = false;
-    } else if (this.t != null) {
-      this.t = this.t.getCause();
-    }
-    if (this.t == null) {
-      throw new NoSuchElementException();
-    }
-    return this.t;
-  }
-
-  /**
-   * Throws an {@link UnsupportedOperationException}.
-   *
-   * @exception UnsupportedOperationException if invoked
-   */
-  @Override
-  public final void remove() {
-    throw new UnsupportedOperationException("remove");
-  }
-
-  /**
-   * Returns a simple, shallow clone of this {@link
-   * ThrowableCauseIterator}.  The clone's state is then reset.
-   *
-   * @return a non-{@code null} clone of this {@link
-   * ThrowableCauseIterator} initialized to its starting state
-   */
-  @Override
-  public ThrowableCauseIterator clone() {
-    ThrowableCauseIterator clone = null;
-    try {
-      clone = (ThrowableCauseIterator)super.clone();
-      assert clone != null;
-    } catch (final CloneNotSupportedException cantHappen) {
-      throw (InternalError)new InternalError().initCause(cantHappen);
-    }
-    clone.notYetStarted = true;
-    return clone;
   }
 
   /**
@@ -163,6 +80,32 @@ public final class ThrowableCauseIterator implements Cloneable, Iterable<Throwab
   @Override
   public String toString() {
     return this.t == null ? "null" : this.t.toString();
+  }
+
+  @Override
+  public int size() {
+    int size = 0;
+    Throwable t = this.t;
+    while (t != null) {
+      size++;
+      t = t.getCause();
+    }
+    return size;
+  }
+
+  @Override
+  public Throwable get(final int index) {
+    if (index < 0) {
+      throw new IndexOutOfBoundsException();
+    }
+    Throwable t = this.t;
+    for (int i = 0; i < index && t != null; i++) {
+      t = t.getCause();
+    }
+    if (t == null) {
+      throw new IndexOutOfBoundsException("index: " + index + "; size: " + this.size());
+    }
+    return t;
   }
 
 }

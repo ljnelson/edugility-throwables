@@ -49,17 +49,14 @@ import java.util.concurrent.CopyOnWriteArrayList;
  * value of its {@link #size()} method is always at least {@code
  * 1}.</p>
  *
- * @author <a href="mailto:ljnelson@gmail.com">Laird Nelson</a>
- *
- * @since 1.0-SNAPSHOT
+ * @author <a href="http://about.me/lairdnelson"
+ * target="_parent">Laird Nelson</a>
  */
 public class ThrowableChain extends Exception implements Collection<Throwable> {
 
   /**
-   * A serial version identifier uniquely identifying the version of
-   * this class.  See the <a
-   * href="http://download.oracle.com/javase/6/docs/api/java/io/Serializable.html">documentation
-   * for the {@code Serializable} class</a> for details.
+   * The version of this class for {@linkplain Serializable
+   * serialization purposes}.
    */
   private static final long serialVersionUID = 1L;
 
@@ -172,6 +169,8 @@ public class ThrowableChain extends Exception implements Collection<Throwable> {
    * {@code null} in which case no action is taken
    *
    * @return {@code true} if at least one element was actually added
+   *
+   * @see #add(Throwable)
    */
   @Override
   public final boolean addAll(final Collection<? extends Throwable> c) {
@@ -273,7 +272,7 @@ public class ThrowableChain extends Exception implements Collection<Throwable> {
    */
   @Override
   public final void clear() {
-    throw new UnsupportedOperationException("clear is unsupported because a ThrowableChain always has itself as its first element");
+    throw new UnsupportedOperationException("clear() is unsupported because a ThrowableChain always has itself as its first element");
   }
 
   /**
