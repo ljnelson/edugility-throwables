@@ -1,0 +1,242 @@
+<HTML>
+<BODY BGCOLOR="white">
+<PRE>
+<FONT color="green">001</FONT>    /* -*- mode: Java; c-basic-offset: 2; indent-tabs-mode: nil -*-<a name="line.1"></a>
+<FONT color="green">002</FONT>     *<a name="line.2"></a>
+<FONT color="green">003</FONT>     * Copyright (c) 2011 Edugility LLC.<a name="line.3"></a>
+<FONT color="green">004</FONT>     *<a name="line.4"></a>
+<FONT color="green">005</FONT>     * Permission is hereby granted, free of charge, to any person<a name="line.5"></a>
+<FONT color="green">006</FONT>     * obtaining a copy of this software and associated documentation<a name="line.6"></a>
+<FONT color="green">007</FONT>     * files (the "Software"), to deal in the Software without<a name="line.7"></a>
+<FONT color="green">008</FONT>     * restriction, including without limitation the rights to use, copy,<a name="line.8"></a>
+<FONT color="green">009</FONT>     * modify, merge, publish, distribute, sublicense and/or sell copies<a name="line.9"></a>
+<FONT color="green">010</FONT>     * of the Software, and to permit persons to whom the Software is<a name="line.10"></a>
+<FONT color="green">011</FONT>     * furnished to do so, subject to the following conditions:<a name="line.11"></a>
+<FONT color="green">012</FONT>     *<a name="line.12"></a>
+<FONT color="green">013</FONT>     * The above copyright notice and this permission notice shall be<a name="line.13"></a>
+<FONT color="green">014</FONT>     * included in all copies or substantial portions of the Software.<a name="line.14"></a>
+<FONT color="green">015</FONT>     *<a name="line.15"></a>
+<FONT color="green">016</FONT>     * THIS SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,<a name="line.16"></a>
+<FONT color="green">017</FONT>     * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF<a name="line.17"></a>
+<FONT color="green">018</FONT>     * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND<a name="line.18"></a>
+<FONT color="green">019</FONT>     * NONINFRINGEMENT.  IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT<a name="line.19"></a>
+<FONT color="green">020</FONT>     * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,<a name="line.20"></a>
+<FONT color="green">021</FONT>     * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,<a name="line.21"></a>
+<FONT color="green">022</FONT>     * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER<a name="line.22"></a>
+<FONT color="green">023</FONT>     * DEALINGS IN THE SOFTWARE.<a name="line.23"></a>
+<FONT color="green">024</FONT>     *<a name="line.24"></a>
+<FONT color="green">025</FONT>     * The original copy of this license is available at<a name="line.25"></a>
+<FONT color="green">026</FONT>     * http://www.opensource.org/license/mit-license.html.<a name="line.26"></a>
+<FONT color="green">027</FONT>     */<a name="line.27"></a>
+<FONT color="green">028</FONT>    package com.edugility.throwables;<a name="line.28"></a>
+<FONT color="green">029</FONT>    <a name="line.29"></a>
+<FONT color="green">030</FONT>    import java.util.ArrayList;<a name="line.30"></a>
+<FONT color="green">031</FONT>    import java.util.Iterator;<a name="line.31"></a>
+<FONT color="green">032</FONT>    import java.util.List;<a name="line.32"></a>
+<FONT color="green">033</FONT>    <a name="line.33"></a>
+<FONT color="green">034</FONT>    import org.junit.Before;<a name="line.34"></a>
+<FONT color="green">035</FONT>    import org.junit.Test;<a name="line.35"></a>
+<FONT color="green">036</FONT>    <a name="line.36"></a>
+<FONT color="green">037</FONT>    import static org.junit.Assert.*;<a name="line.37"></a>
+<FONT color="green">038</FONT>    <a name="line.38"></a>
+<FONT color="green">039</FONT>    public class TestCaseThrowables {<a name="line.39"></a>
+<FONT color="green">040</FONT>    <a name="line.40"></a>
+<FONT color="green">041</FONT>      private Throwable first;<a name="line.41"></a>
+<FONT color="green">042</FONT>    <a name="line.42"></a>
+<FONT color="green">043</FONT>      private Throwable thirdToLast;<a name="line.43"></a>
+<FONT color="green">044</FONT>    <a name="line.44"></a>
+<FONT color="green">045</FONT>      private Throwable secondToLast;<a name="line.45"></a>
+<FONT color="green">046</FONT>    <a name="line.46"></a>
+<FONT color="green">047</FONT>      private Throwable last;<a name="line.47"></a>
+<FONT color="green">048</FONT>    <a name="line.48"></a>
+<FONT color="green">049</FONT>      public TestCaseThrowables() {<a name="line.49"></a>
+<FONT color="green">050</FONT>        super();<a name="line.50"></a>
+<FONT color="green">051</FONT>      }<a name="line.51"></a>
+<FONT color="green">052</FONT>    <a name="line.52"></a>
+<FONT color="green">053</FONT>      @Before<a name="line.53"></a>
+<FONT color="green">054</FONT>      public void setUp() {<a name="line.54"></a>
+<FONT color="green">055</FONT>        this.last = new NumberFormatException();<a name="line.55"></a>
+<FONT color="green">056</FONT>        this.secondToLast = new IllegalArgumentException(this.last);<a name="line.56"></a>
+<FONT color="green">057</FONT>        this.thirdToLast = new IllegalArgumentException(this.secondToLast);<a name="line.57"></a>
+<FONT color="green">058</FONT>        this.first = new Throwable(this.thirdToLast);<a name="line.58"></a>
+<FONT color="green">059</FONT>      }<a name="line.59"></a>
+<FONT color="green">060</FONT>    <a name="line.60"></a>
+<FONT color="green">061</FONT>      @Test<a name="line.61"></a>
+<FONT color="green">062</FONT>      public void testFirstInstance() {<a name="line.62"></a>
+<FONT color="green">063</FONT>        final NumberFormatException result = Throwables.firstInstance(this.first, NumberFormatException.class);<a name="line.63"></a>
+<FONT color="green">064</FONT>        assertSame(result, this.last);<a name="line.64"></a>
+<FONT color="green">065</FONT>      }<a name="line.65"></a>
+<FONT color="green">066</FONT>    <a name="line.66"></a>
+<FONT color="green">067</FONT>      @Test<a name="line.67"></a>
+<FONT color="green">068</FONT>      public void testLastInstance() {<a name="line.68"></a>
+<FONT color="green">069</FONT>        final IllegalArgumentException result = Throwables.lastInstance(this.first, IllegalArgumentException.class);<a name="line.69"></a>
+<FONT color="green">070</FONT>        assertSame(result, this.last);<a name="line.70"></a>
+<FONT color="green">071</FONT>      }<a name="line.71"></a>
+<FONT color="green">072</FONT>    <a name="line.72"></a>
+<FONT color="green">073</FONT>      @Test<a name="line.73"></a>
+<FONT color="green">074</FONT>      public void testGetRootCause() {<a name="line.74"></a>
+<FONT color="green">075</FONT>        Throwable cause = Throwables.getRootCause(this.first);<a name="line.75"></a>
+<FONT color="green">076</FONT>        assertSame(cause, this.last);<a name="line.76"></a>
+<FONT color="green">077</FONT>        cause = Throwables.getRootCause(null);<a name="line.77"></a>
+<FONT color="green">078</FONT>        assertNull(cause);<a name="line.78"></a>
+<FONT color="green">079</FONT>      }<a name="line.79"></a>
+<FONT color="green">080</FONT>    <a name="line.80"></a>
+<FONT color="green">081</FONT>      @Test<a name="line.81"></a>
+<FONT color="green">082</FONT>      public void testToList() {<a name="line.82"></a>
+<FONT color="green">083</FONT>        List&lt;Throwable&gt; list = Throwables.toList(null);<a name="line.83"></a>
+<FONT color="green">084</FONT>        assertNotNull(list);<a name="line.84"></a>
+<FONT color="green">085</FONT>        assertTrue(list.isEmpty());<a name="line.85"></a>
+<FONT color="green">086</FONT>    <a name="line.86"></a>
+<FONT color="green">087</FONT>        list = Throwables.toList(this.first);<a name="line.87"></a>
+<FONT color="green">088</FONT>        assertNotNull(list);<a name="line.88"></a>
+<FONT color="green">089</FONT>        assertEquals(4, list.size());<a name="line.89"></a>
+<FONT color="green">090</FONT>        assertSame(this.first, list.get(0));<a name="line.90"></a>
+<FONT color="green">091</FONT>        assertSame(this.thirdToLast, list.get(1));<a name="line.91"></a>
+<FONT color="green">092</FONT>        assertSame(this.secondToLast, list.get(2));<a name="line.92"></a>
+<FONT color="green">093</FONT>        assertSame(this.last, list.get(3));<a name="line.93"></a>
+<FONT color="green">094</FONT>      }<a name="line.94"></a>
+<FONT color="green">095</FONT>    <a name="line.95"></a>
+<FONT color="green">096</FONT>      @Test<a name="line.96"></a>
+<FONT color="green">097</FONT>      public void testToListWithThrowableChain() {<a name="line.97"></a>
+<FONT color="green">098</FONT>        final ThrowableChain chain = new ThrowableChain();<a name="line.98"></a>
+<FONT color="green">099</FONT>    <a name="line.99"></a>
+<FONT color="green">100</FONT>        // A ThrowableChain always contains itself.<a name="line.100"></a>
+<FONT color="green">101</FONT>        assertEquals(1, chain.size());<a name="line.101"></a>
+<FONT color="green">102</FONT>    <a name="line.102"></a>
+<FONT color="green">103</FONT>        // Setting the cause does nothing to the list of affiliates or a<a name="line.103"></a>
+<FONT color="green">104</FONT>        // ThrowableChain's size.<a name="line.104"></a>
+<FONT color="green">105</FONT>        final Exception cause = new Exception("cause");<a name="line.105"></a>
+<FONT color="green">106</FONT>        chain.add(cause); // actually initializes cause, does not add to list<a name="line.106"></a>
+<FONT color="green">107</FONT>        assertEquals(1, chain.size());<a name="line.107"></a>
+<FONT color="green">108</FONT>        assertSame(cause, chain.getCause());<a name="line.108"></a>
+<FONT color="green">109</FONT>    <a name="line.109"></a>
+<FONT color="green">110</FONT>        // Adding an affiliate to a ThrowableChain with a cause results in<a name="line.110"></a>
+<FONT color="green">111</FONT>        // size 2, not 3.<a name="line.111"></a>
+<FONT color="green">112</FONT>        final Exception firstAffiliate = new Exception("firstAffiliate");<a name="line.112"></a>
+<FONT color="green">113</FONT>        chain.add(firstAffiliate);<a name="line.113"></a>
+<FONT color="green">114</FONT>        assertEquals(2, chain.size());<a name="line.114"></a>
+<FONT color="green">115</FONT>    <a name="line.115"></a>
+<FONT color="green">116</FONT>        // But asking Throwables#toList() to do its thing WILL produce a<a name="line.116"></a>
+<FONT color="green">117</FONT>        // list of size 3, since causes ARE considered.<a name="line.117"></a>
+<FONT color="green">118</FONT>        final List&lt;Throwable&gt; list = Throwables.toList(chain);<a name="line.118"></a>
+<FONT color="green">119</FONT>        assertNotNull(list);<a name="line.119"></a>
+<FONT color="green">120</FONT>        assertEquals(3, list.size());<a name="line.120"></a>
+<FONT color="green">121</FONT>    <a name="line.121"></a>
+<FONT color="green">122</FONT>        // A ThrowableChain is always the first element in the list that<a name="line.122"></a>
+<FONT color="green">123</FONT>        // results from Throwables#toList() when it is passed to it.<a name="line.123"></a>
+<FONT color="green">124</FONT>        assertSame(chain, list.get(0));<a name="line.124"></a>
+<FONT color="green">125</FONT>        <a name="line.125"></a>
+<FONT color="green">126</FONT>        // Causes are next (depth first).<a name="line.126"></a>
+<FONT color="green">127</FONT>        assertSame(cause, list.get(1));<a name="line.127"></a>
+<FONT color="green">128</FONT>    <a name="line.128"></a>
+<FONT color="green">129</FONT>        // After one list element's causal chain is iterated, then the<a name="line.129"></a>
+<FONT color="green">130</FONT>        // next one is iterated.<a name="line.130"></a>
+<FONT color="green">131</FONT>        assertSame(firstAffiliate, list.get(2));<a name="line.131"></a>
+<FONT color="green">132</FONT>      }<a name="line.132"></a>
+<FONT color="green">133</FONT>    <a name="line.133"></a>
+<FONT color="green">134</FONT>      @Test<a name="line.134"></a>
+<FONT color="green">135</FONT>      public void testWeird() {<a name="line.135"></a>
+<FONT color="green">136</FONT>        // Tests a throwable that is an Iterable&lt;Throwable&gt; that does NOT<a name="line.136"></a>
+<FONT color="green">137</FONT>        // contain itself<a name="line.137"></a>
+<FONT color="green">138</FONT>        final ThrowableCollection c = new ThrowableCollection();<a name="line.138"></a>
+<FONT color="green">139</FONT>        final Iterator&lt;Throwable&gt; i = c.iterator();<a name="line.139"></a>
+<FONT color="green">140</FONT>        assertNotNull(i);<a name="line.140"></a>
+<FONT color="green">141</FONT>        assertTrue(i.hasNext());<a name="line.141"></a>
+<FONT color="green">142</FONT>        assertFalse(c == i.next());<a name="line.142"></a>
+<FONT color="green">143</FONT>    <a name="line.143"></a>
+<FONT color="green">144</FONT>        final List&lt;Throwable&gt; list = Throwables.toList(c);<a name="line.144"></a>
+<FONT color="green">145</FONT>        assertNotNull(list);<a name="line.145"></a>
+<FONT color="green">146</FONT>        assertEquals(3, list.size());<a name="line.146"></a>
+<FONT color="green">147</FONT>        assertSame(c, list.get(0));<a name="line.147"></a>
+<FONT color="green">148</FONT>      }<a name="line.148"></a>
+<FONT color="green">149</FONT>    <a name="line.149"></a>
+<FONT color="green">150</FONT>      private static final class ThrowableCollection extends Throwable implements Iterable&lt;Throwable&gt; {<a name="line.150"></a>
+<FONT color="green">151</FONT>    <a name="line.151"></a>
+<FONT color="green">152</FONT>        /**<a name="line.152"></a>
+<FONT color="green">153</FONT>         * A serial version identifier uniquely identifying the version of<a name="line.153"></a>
+<FONT color="green">154</FONT>         * this class.  See the &lt;a<a name="line.154"></a>
+<FONT color="green">155</FONT>         * href="http://download.oracle.com/javase/6/docs/api/java/io/Serializable.html"&gt;documentation<a name="line.155"></a>
+<FONT color="green">156</FONT>         * for the {@code Serializable} class&lt;/a&gt; for details.<a name="line.156"></a>
+<FONT color="green">157</FONT>         */<a name="line.157"></a>
+<FONT color="green">158</FONT>        private static final long serialVersionUID = 1L;<a name="line.158"></a>
+<FONT color="green">159</FONT>    <a name="line.159"></a>
+<FONT color="green">160</FONT>        private final List&lt;Throwable&gt; list;<a name="line.160"></a>
+<FONT color="green">161</FONT>    <a name="line.161"></a>
+<FONT color="green">162</FONT>        private ThrowableCollection() {<a name="line.162"></a>
+<FONT color="green">163</FONT>          super();<a name="line.163"></a>
+<FONT color="green">164</FONT>          this.list = new ArrayList&lt;Throwable&gt;();<a name="line.164"></a>
+<FONT color="green">165</FONT>          this.list.add(new Exception("first affiliate"));<a name="line.165"></a>
+<FONT color="green">166</FONT>          this.list.add(new Exception("second affiliate"));<a name="line.166"></a>
+<FONT color="green">167</FONT>        }<a name="line.167"></a>
+<FONT color="green">168</FONT>    <a name="line.168"></a>
+<FONT color="green">169</FONT>        @Override<a name="line.169"></a>
+<FONT color="green">170</FONT>        public Iterator&lt;Throwable&gt; iterator() {<a name="line.170"></a>
+<FONT color="green">171</FONT>          return this.list.iterator();<a name="line.171"></a>
+<FONT color="green">172</FONT>        }<a name="line.172"></a>
+<FONT color="green">173</FONT>    <a name="line.173"></a>
+<FONT color="green">174</FONT>      }<a name="line.174"></a>
+<FONT color="green">175</FONT>    <a name="line.175"></a>
+<FONT color="green">176</FONT>    }<a name="line.176"></a>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</PRE>
+</BODY>
+</HTML>
