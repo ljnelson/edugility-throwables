@@ -71,10 +71,10 @@ public class TestCaseThrowables {
   }
 
   @Test
-  public void testGetPrimordialCause() {
-    Throwable cause = Throwables.getPrimordialCause(this.first);
+  public void testGetRootCause() {
+    Throwable cause = Throwables.getRootCause(this.first);
     assertSame(cause, this.last);
-    cause = Throwables.getPrimordialCause(null);
+    cause = Throwables.getRootCause(null);
     assertNull(cause);
   }
 

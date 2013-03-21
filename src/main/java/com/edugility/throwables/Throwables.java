@@ -58,7 +58,7 @@ public final class Throwables {
    * @return the "deepest" {@linkplain Throwable#getCause() cause}
    * reachable from the supplied {@link Throwable}, or {@code null}
    */
-  public static final Throwable getPrimordialCause(Throwable t) {
+  public static final Throwable getRootCause(Throwable t) {
     if (t == null) {
       return null;
     }

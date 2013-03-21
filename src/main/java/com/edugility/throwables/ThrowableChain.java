@@ -1,6 +1,6 @@
 /* -*- mode: Java; c-basic-offset: 2; indent-tabs-mode: nil; coding: utf-8-unix -*-
  *
- * Copyright (c) 2011 Edugility LLC.
+ * Copyright (c) 2011-2013 Edugility LLC.
  *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
@@ -89,6 +89,7 @@ public class ThrowableChain extends Exception implements Collection<Throwable> {
   public ThrowableChain(final String message, final Throwable cause) {
     super(message);
     this.list = new CopyOnWriteArrayList<Throwable>(Collections.singleton(this));
+    assert this.size() == 1;
     if (cause != null) {
       this.initCause(cause);
     }
